@@ -1,36 +1,32 @@
-One Piece TCG Price Comparator
+# One Piece TCG Price Comparator
 
-Disclaimer: This project was developed solely for educational and personal learning purposes. It is not intended for production use and has no affiliation with LigaOnePiece, TCGPlayer, or any other platform.
+>  Educational project for comparing One Piece Trading Card Game prices
 
-Overview
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 
-A personal project built with Next.js (App Router), React, and TypeScript to compare One Piece TCG card prices across different sources.
-It integrates web scraping (LigaOnePiece) and APIs TCGPlayer (TCGCSV) with a responsive UI.
+## ⚠️ Important Disclaimer
 
-Features
+**This project is for educational and learning purposes only.**
 
-Automated price scraping
+- Not intended for production or commercial use
+- No affiliation with LigaOnePiece, TCGPlayer, or any trading platform
+- Respects robots.txt and implements reasonable rate limiting
+- Users should comply with respective platforms' Terms of Service
 
-TCGCSV API integration
+##  Features
 
-Currency conversion (BRL ↔ USD)
+- **Smart Search**: Find cards across multiple platforms
+- **Live Currency Conversion**: Real-time BRL ↔ USD rates
+- **Price Comparison**: Side-by-side price analysis
+- **Responsive Design**: Mobile-first approach
+-  **Fast Performance**: Optimized with Next.js 14
 
-Interactive price comparison charts
+##  Tech Stack
 
-Responsive design with ShadCN/UI
-
-Tech Stack
-
-Next.js 14 (App Router)
-
-React 18 + TypeScript
-
-TailwindCSS + ShadCN/UI
-
-Playwright
-
-Recharts
-
-License
-
-This repository is for educational purposes only.
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: TailwindCSS + ShadCN/UI
+- **Charts**: Recharts
+- **Web Scraping**: Playwright
+- **APIs**: TCGPlayer (via TCGCSV), Exchange Rate API
