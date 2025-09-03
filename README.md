@@ -5,13 +5,13 @@ Disclaimer: This project was developed solely for educational and personal learn
 Overview
 
 A personal project built with Next.js (App Router), React, and TypeScript to compare One Piece TCG card prices across different sources.
-It integrates web scraping (LigaOnePiece) and official APIs (TCGPlayer) with a clean, responsive UI.
+It integrates web scraping (LigaOnePiece) and APIs TCGPlayer (TCGCSV) with a responsive UI.
 
 Features
 
 Automated price scraping
 
-TCGPlayer API integration
+TCGCSV API integration
 
 Currency conversion (BRL ↔ USD)
 
