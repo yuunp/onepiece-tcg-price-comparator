@@ -12,14 +12,12 @@
 - Not intended for production or commercial use
 - No affiliation with LigaOnePiece, TCGPlayer, or any trading platform
 - Respects robots.txt and implements reasonable rate limiting
-- Users should comply with respective platforms' Terms of Service
 
 ##  Features
 
 - **Smart Search**: Find cards across multiple platforms
 - **Live Currency Conversion**: Real-time BRL ↔ USD rates
 - **Price Comparison**: Side-by-side price analysis
-- **Responsive Design**: Mobile-first approach
 -  **Fast Performance**: Optimized with Next.js 14
 
 ##  Tech Stack
