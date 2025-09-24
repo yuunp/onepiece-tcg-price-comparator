@@ -160,9 +160,13 @@ export default function OnePieceComparator() {
       <header className="sticky top-0 z-50 w-full border-b bg-white/90 dark:bg-slate-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-950/80">
         <div className="container flex h-20 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 shadow-md">
-              <Ship className="h-6 w-6 text-white" />
-            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl shadow-md overflow-hidden">
+              <img 
+                src="/jollylupa.png" 
+                alt="Jolly Lupa Logo" 
+                className="h-full w-full object-cover"
+                 />
+              </div>
             <div className="flex flex-col">
               <h1 className="text-2xl md:text-3xl font-extrabold leading-none bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                 One Piece Comparator
@@ -604,9 +608,13 @@ export default function OnePieceComparator() {
         <div className="container mx-auto px-4 py-12">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-amber-500 to-orange-500">
-                <Ship className="h-6 w-6 text-white" />
-              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg shadow-md overflow-hidden">
+                <img 
+                src="/jollylupa.png" 
+                alt="Jolly Lupa Logo" 
+                className="h-full w-full object-cover"
+                  />
+                </div>
               <span className="text-2xl md:text-3xl font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                 One Piece Comparator
               </span>

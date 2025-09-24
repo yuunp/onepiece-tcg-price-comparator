@@ -24,6 +24,7 @@ html {
 }
         `}</style>
       </head>
+      <link rel="icon" href="/jollylupawhitebg.png" />
       <body>{children}</body>
     </html>
   )
