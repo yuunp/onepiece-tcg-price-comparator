@@ -1,7 +1,8 @@
 "use client"
 
-import { TrendingDown, TrendingUp, ExternalLink, Crown, AlertTriangle, CheckCircle, Target, Hash, Package, Sparkles } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import React from "react"
+import { TrendingDown, TrendingUp, ExternalLink, Crown, AlertTriangle, CheckCircle, Hash, Package, Sparkles } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { TCGPlayerCard } from "@/lib/tcgplayer"
@@ -112,7 +113,6 @@ const identifyVariation = (numericCode: string): CardVariation => {
     }
   }
 
-  // Extrair sufixo do código (últimas letras após o hífen)
   const suffix = numericCode.split('-').pop()?.replace(/^\d+/, '') || ''
   
   return variations[suffix] || {
@@ -181,7 +181,7 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
 
   if (tcgSetName && ligaSetName && tcgSetName === ligaSetName) {
     totalScore += 30
-    reasons.push(`📦 Mesmo set: "${tcgSetName}" (30%)`)
+    reasons.push(`📦 Same set: "${tcgSetName}" (30%)`)
   }
 
   // === 40% NOME DA CARTA ===
@@ -191,11 +191,11 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
   if (tcgNameNormalized && ligaNameNormalized) {
     if (tcgNameNormalized === ligaNameNormalized) {
       totalScore += 40
-      reasons.push(`👤 Nome idêntico: "${tcgNameNormalized}" (40%)`)
+      reasons.push(`👤 Identical name: "${tcgNameNormalized}" (40%)`)
     } else if (tcgNameNormalized.includes(ligaNameNormalized) || 
                ligaNameNormalized.includes(tcgNameNormalized)) {
       totalScore += 0
-      reasons.push(`👤 Nomes similares: "${tcgNameNormalized}" ≈ "${ligaNameNormalized}" (25%)`)
+      reasons.push(`👤 Names similar: "${tcgNameNormalized}" ≈ "${ligaNameNormalized}" (25%)`)
     }
   }
 
@@ -209,13 +209,13 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
     
     if (tcgBase === ligaBase) {
       totalScore += 30
-      reasons.push(`🎯 Código base: ${tcgBase} (30%)`)
+      reasons.push(`🎯 Base code: ${tcgBase} (30%)`)
     } else {
       const tcgSetFromCode = tcgCode.split('-')[0]
       const ligaSetFromCode = ligaCode.split('-')[0]
       if (tcgSetFromCode === ligaSetFromCode) {
         totalScore += 15
-        reasons.push(`🔶 Mesmo set no código: ${tcgSetFromCode} (15%)`)
+        reasons.push(`🔶 Same set in code: ${tcgSetFromCode} (15%)`)
       }
     }
   }
@@ -283,30 +283,30 @@ const matchCards = (tcgCards: TCGPlayerCard[], ligaCards: LigaCard[]): CardMatch
   })
 
   // CARTAS NÃO MATCHED
-  tcgCards.forEach((tcgCard, index) => {
+  tcgCards.forEach((card, index) => {
     if (!usedTcgIndices.has(index)) {
       matches.push({
-        tcgCard,
+        tcgCard: card,
         similarity: 0,
         bestPrice: "tcg",
         matchType: "none",
-        matchMethod: 'Sem correspondência',
+        matchMethod: 'No match found',
         confidenceScore: 0,
-        matchReasons: ['❌ Nenhum match encontrado']
+        matchReasons: ['❌ No match found']
       })
     }
   })
 
-  ligaCards.forEach((ligaCard, index) => {
+  ligaCards.forEach((card, index) => {
     if (!usedLigaIndices.has(index)) {
       matches.push({
-        ligaCard,
+        ligaCard: card,
         similarity: 0,
         bestPrice: "liga",
         matchType: "none",
-        matchMethod: 'Sem correspondência',
+        matchMethod: 'No match found',
         confidenceScore: 0,
-        matchReasons: ['❌ Nenhum match encontrado']
+        matchReasons: ['❌ No match found']
       })
     }
   })
@@ -362,10 +362,42 @@ const formatCurrency = (amount: number, currency: string = "USD"): string => {
 // ===== COMPONENTE PRINCIPAL =====
 
 export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }: PriceComparisonProps) => {
+  const [sortBy, setSortBy] = React.useState<'savings' | 'match' | 'price-low' | 'price-high'>('savings')
+  
   const matches = useMemo(() => {
     if (!tcgResults || !ligaResults) return []
     return matchCards(tcgResults, ligaResults)
   }, [tcgResults, ligaResults])
+
+  const sortedMatches = useMemo(() => {
+    const sorted = [...matches]
+    
+    switch (sortBy) {
+      case 'savings':
+        return sorted.sort((a, b) => (b.savings || 0) - (a.savings || 0))
+      case 'match':
+        return sorted.sort((a, b) => {
+          const matchOrder = { 'perfect': 3, 'high': 2, 'medium': 1, 'none': 0 }
+          return matchOrder[b.matchType as keyof typeof matchOrder] - matchOrder[a.matchType as keyof typeof matchOrder]
+        })
+      case 'price-low': {
+        return sorted.sort((a, b) => {
+          const priceA = Math.min(a.tcgCard?.price?.marketPrice || Infinity, a.ligaCard?.price ? a.ligaCard.price * exchangeRate : Infinity)
+          const priceB = Math.min(b.tcgCard?.price?.marketPrice || Infinity, b.ligaCard?.price ? b.ligaCard.price * exchangeRate : Infinity)
+          return priceA - priceB
+        })
+      }
+      case 'price-high': {
+        return sorted.sort((a, b) => {
+          const priceA = Math.max(a.tcgCard?.price?.marketPrice || 0, a.ligaCard?.price ? a.ligaCard.price * exchangeRate : 0)
+          const priceB = Math.max(b.tcgCard?.price?.marketPrice || 0, b.ligaCard?.price ? b.ligaCard.price * exchangeRate : 0)
+          return priceB - priceA
+        })
+      }
+      default:
+        return sorted
+    }
+  }, [matches, sortBy, exchangeRate])
 
   const stats = useMemo(() => ({
     perfect: matches.filter(m => m.matchType === 'perfect').length,
@@ -383,200 +415,242 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
 
   return (
     <div className="space-y-6">
-      {/* Estatísticas */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-600">{stats.perfect}</div>
-            <div className="text-sm text-muted-foreground">Perfect Match</div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.perfect}</div>
+            <div className="text-xs text-emerald-700 dark:text-emerald-300 font-medium mt-1">Perfect Matches</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.high + stats.medium}</div>
-            <div className="text-sm text-muted-foreground">Good Matches</div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.high + stats.medium}</div>
+            <div className="text-xs text-blue-700 dark:text-blue-300 font-medium mt-1">Good Matches</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.none}</div>
-            <div className="text-sm text-muted-foreground">No Match</div>
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.none}</div>
+            <div className="text-xs text-orange-700 dark:text-orange-300 font-medium mt-1">No Match</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary">{formatCurrency(stats.totalSavings)}</div>
-            <div className="text-sm text-muted-foreground">Total Savings</div>
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{formatCurrency(stats.totalSavings)}</div>
+            <div className="text-xs text-amber-700 dark:text-amber-300 font-medium mt-1">Potential Savings</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de Comparações */}
-      <div className="space-y-4">
-        {matches.map((match, index) => {
-          const ligaPriceUSD = match.ligaCard?.price * exchangeRate
+      {/* Sorting Controls */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Sort by:</span>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setSortBy('savings')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              sortBy === 'savings'
+                ? 'bg-amber-500 text-white'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            💰 Best Deals
+          </button>
+          <button
+            onClick={() => setSortBy('match')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              sortBy === 'match'
+                ? 'bg-emerald-500 text-white'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            ✓ Best Match
+          </button>
+          <button
+            onClick={() => setSortBy('price-low')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              sortBy === 'price-low'
+                ? 'bg-blue-500 text-white'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            ↓ Lowest Price
+          </button>
+          <button
+            onClick={() => setSortBy('price-high')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              sortBy === 'price-high'
+                ? 'bg-purple-500 text-white'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            ↑ Highest Price
+          </button>
+        </div>
+      </div>
+
+      {/* Comparison List */}
+      <div className="space-y-3">
+        {sortedMatches.map((match, index) => {
+          const ligaPriceUSD = match.ligaCard?.price ? match.ligaCard.price * exchangeRate : 0
           const ligaVariation = match.ligaCard?.numericCode ? identifyVariation(match.ligaCard.numericCode) : null
           
+          const bgColorClass = {
+            'perfect': 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20',
+            'high': 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20',
+            'medium': 'border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20',
+            'none': 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
+          }[match.matchType]
+          
           return (
-            <Card key={index} className={`overflow-hidden ${
-              match.matchType === 'perfect' ? 'border-emerald-200 bg-emerald-50' :
-              match.matchType === 'high' ? 'border-blue-200 bg-blue-50' :
-              match.matchType === 'medium' ? 'border-orange-200 bg-orange-50' :
-              'border-gray-200 bg-gray-50'
-            }`}>
-              <CardContent className="p-6">
-                <div className="grid md:grid-cols-2 gap-6">
+            <Card key={index} className={`overflow-hidden transition-all duration-200 hover:shadow-md ${bgColorClass}`}>
+              <CardContent className="p-5 flex flex-col h-full">
+                {/* Cards Grid */}
+                <div className="grid md:grid-cols-2 gap-5 flex-1 mb-4">
                   
                   {/* TCGPlayer Side */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-blue-600">TCGPlayer</Badge>
-                      {match.tcgCard && (
-                        <Badge variant="outline" className="text-xs">
+                  {match.tcgCard && (
+                    <div className="space-y-3 flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-blue-500 text-white text-xs">TCGPlayer</Badge>
+                        <Badge variant="outline" className="text-xs border-neutral-300 dark:border-neutral-600">
                           <Hash className="w-3 h-3 mr-1" />
                           {match.tcgCard.extendedData?.find(d => d.name === 'Number')?.value || 'No Code'}
                         </Badge>
-                      )}
-                    </div>
-
-                    {match.tcgCard && (
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
-                          <div className="w-16 h-20 bg-muted rounded overflow-hidden flex-shrink-0">
-                            <img
-                              src={match.tcgCard.imageUrl}
-                              alt={match.tcgCard.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = '/placeholder-card.jpg'
-                              }}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm line-clamp-2">{match.tcgCard.name}</h4>
-                            <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                              {match.tcgCard.setName && (
-                                <div className="flex items-center gap-1">
-                                  <Package className="w-3 h-3" />
-                                  {match.tcgCard.setName}
-                                </div>
-                              )}
-                            </div>
-                            <div className="mt-2 text-sm font-semibold">
-                              {formatCurrency(match.tcgCard.price?.marketPrice || 0)}
-                            </div>
-                          </div>
-                        </div>
-                        {match.tcgCard.url && (
-                          <Button variant="outline" size="sm" className="w-full" asChild>
-                            <a href={match.tcgCard.url} target="_blank" rel="noopener noreferrer">
-                              View on TCGPlayer <ExternalLink className="w-3 h-3 ml-1" />
-                            </a>
-                          </Button>
-                        )}
                       </div>
-                    )}
-                  </div>
+
+                      <div className="flex gap-3 flex-1">
+                        <div className="w-16 h-20 bg-neutral-200 dark:bg-neutral-700 rounded overflow-hidden flex-shrink-0">
+                          <img
+                            src={match.tcgCard.imageUrl}
+                            alt={match.tcgCard.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg'
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm line-clamp-2 text-neutral-900 dark:text-white">{match.tcgCard.name}</h4>
+                          <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 space-y-1">
+                            {match.tcgCard.setName && (
+                              <div className="flex items-center gap-1">
+                                <Package className="w-3 h-3" />
+                                {match.tcgCard.setName}
+                              </div>
+                            )}
+                          </div>
+                          {match.tcgCard.price && (
+                            <div className="mt-2 text-sm font-bold text-blue-600 dark:text-blue-400">
+                              ${match.tcgCard.price.marketPrice?.toFixed(2) || 'N/A'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <Button variant="outline" size="sm" className="w-full text-xs h-8 border-neutral-300 dark:border-neutral-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:text-blue-600 dark:hover:text-blue-400 mt-auto" asChild>
+                        <a href={match.tcgCard.url} target="_blank" rel="noopener noreferrer">
+                          View <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Liga One Piece Side */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-green-600">Liga One Piece</Badge>
-                      {match.ligaCard && (
-                        <Badge variant="outline" className="text-xs">
+                  {match.ligaCard && (
+                    <div className="space-y-3 flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-500 text-white text-xs">Liga One Piece</Badge>
+                        <Badge variant="outline" className="text-xs border-neutral-300 dark:border-neutral-600">
                           <Hash className="w-3 h-3 mr-1" />
                           {match.ligaCard.numericCode || 'No Code'}
                         </Badge>
-                      )}
-                    </div>
+                      </div>
 
-                    {match.ligaCard && (
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
-                          <div className="w-16 h-20 bg-muted rounded overflow-hidden flex-shrink-0">
-                            <img
-                              src={match.ligaCard.imageUrl}
-                              alt={match.ligaCard.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = '/placeholder-card.jpg'
-                              }}
-                            />
+                      <div className="flex gap-3 flex-1">
+                        <div className="w-16 h-20 bg-neutral-200 dark:bg-neutral-700 rounded overflow-hidden flex-shrink-0">
+                          <img
+                            src={match.ligaCard.imageUrl}
+                            alt={match.ligaCard.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder.svg'
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm line-clamp-2 text-neutral-900 dark:text-white">{match.ligaCard.name}</h4>
+                          <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 space-y-1">
+                            {match.ligaCard.set && (
+                              <div className="flex items-center gap-1">
+                                <Package className="w-3 h-3" />
+                                {match.ligaCard.set}
+                              </div>
+                            )}
+                            {ligaVariation && (
+                              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <Sparkles className="w-3 h-3" />
+                                {ligaVariation.name}
+                              </div>
+                            )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm line-clamp-2">{match.ligaCard.name}</h4>
-                            <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                              {match.ligaCard.set && (
-                                <div className="flex items-center gap-1">
-                                  <Package className="w-3 h-3" />
-                                  {match.ligaCard.set}
-                                </div>
-                              )}
-                              {ligaVariation && (
-                                <div className="flex items-center gap-1 text-amber-600">
-                                  <Sparkles className="w-3 h-3" />
-                                  {ligaVariation.name}
-                                </div>
-                              )}
+                          <div className="mt-2">
+                            <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                              R$ {match.ligaCard.price?.toFixed(2) || 'N/A'}
                             </div>
-                            <div className="mt-2">
-                              <div className="text-sm font-semibold">
-                                {formatCurrency(match.ligaCard.price, "BRL")}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                ≈ {formatCurrency(ligaPriceUSD)}
-                              </div>
+                            <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                              ≈ {formatCurrency(ligaPriceUSD)}
                             </div>
                           </div>
                         </div>
-                        {match.ligaCard.url && (
-                          <Button variant="outline" size="sm" className="w-full" asChild>
-                            <a href={match.ligaCard.url} target="_blank" rel="noopener noreferrer">
-                              View on Liga <ExternalLink className="w-3 h-3 ml-1" />
-                            </a>
-                          </Button>
-                        )}
                       </div>
-                    )}
-                  </div>
+
+                      <Button variant="outline" size="sm" className="w-full text-xs h-8 border-neutral-300 dark:border-neutral-600 hover:bg-green-50 dark:hover:bg-green-950/30 hover:text-green-600 dark:hover:text-green-400 mt-auto" asChild>
+                        <a href={match.ligaCard.url} target="_blank" rel="noopener noreferrer">
+                          View <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Match Info Section */}
-                <div className={`mt-4 p-3 rounded-lg border ${
-                  match.matchType === 'perfect' ? 'bg-emerald-100 border-emerald-200' :
-                  match.matchType === 'high' ? 'bg-blue-100 border-blue-200' :
-                  match.matchType === 'medium' ? 'bg-orange-100 border-orange-200' :
-                  'bg-gray-100 border-gray-200'
+                <div className={`p-3 rounded-lg border space-y-2 ${
+                  match.matchType === 'perfect' ? 'bg-emerald-100/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700' :
+                  match.matchType === 'high' ? 'bg-blue-100/50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700' :
+                  match.matchType === 'medium' ? 'bg-orange-100/50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700' :
+                  'bg-neutral-100/50 dark:bg-neutral-900/30 border-neutral-300 dark:border-neutral-600'
                 }`}>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {match.matchType === "perfect" && (
-                        <Badge className="bg-emerald-600">
+                        <Badge className="bg-emerald-600 text-white text-xs">
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          Perfect Match ({match.confidenceScore}%)
+                          Perfect ({match.confidenceScore}%)
                         </Badge>
                       )}
                       {match.matchType === "high" && (
-                        <Badge className="bg-blue-600">
+                        <Badge className="bg-blue-600 text-white text-xs">
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          Good Match ({match.confidenceScore}%)
+                          Good ({match.confidenceScore}%)
                         </Badge>
                       )}
                       {match.matchType === "medium" && (
-                        <Badge className="bg-orange-600">
+                        <Badge className="bg-orange-600 text-white text-xs">
                           <AlertTriangle className="w-3 h-3 mr-1" />
-                          Medium Match ({match.confidenceScore}%)
+                          Medium ({match.confidenceScore}%)
                         </Badge>
                       )}
                       {match.matchType === "none" && (
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="text-xs border-neutral-400 dark:border-neutral-500">
                           <AlertTriangle className="w-3 h-3 mr-1" />
                           No Match
                         </Badge>
                       )}
                     </div>
                     {match.savings && match.savings > 0 && (
-                      <Badge variant={match.bestPrice === "tcg" ? "default" : "secondary"} className="gap-1">
+                      <Badge className={`gap-1 text-xs text-white ${match.bestPrice === "tcg" ? 'bg-blue-600' : 'bg-green-600'}`}>
                         <Crown className="w-3 h-3" />
                         Save {formatCurrency(match.savings)}
                       </Badge>
@@ -584,26 +658,13 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
                   </div>
                   
                   {match.matchReasons.length > 0 && (
-                    <div className="text-xs space-y-1">
+                    <div className="text-xs space-y-1 pt-2 border-t border-current border-opacity-10">
                       {match.matchReasons.map((reason, i) => (
-                        <div key={i} className="flex items-center gap-1 text-muted-foreground">
+                        <div key={i} className="flex items-start gap-2 text-neutral-700 dark:text-neutral-300">
                           <span>•</span>
                           <span>{reason}</span>
                         </div>
                       ))}
-                    </div>
-                  )}
-
-                  {/* ✅ INFO DA VARIAÇÃO */}
-                  {ligaVariation && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="font-medium">Variação:</span>
-                        <Badge variant="outline" className="text-xs">
-                          {ligaVariation.emoji} {ligaVariation.name}
-                        </Badge>
-                        <span className="text-muted-foreground">{ligaVariation.description}</span>
-                      </div>
                     </div>
                   )}
                 </div>

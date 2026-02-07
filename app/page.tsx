@@ -12,12 +12,12 @@ import {
   List,
   ChevronRight,
   Sparkles,
-  Ship,
-  Coins,
+  TrendingDown,
   BarChart3,
-  XCircle,
+  X,
   ArrowUpDown,
-  History,
+  Clock,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -145,120 +145,76 @@ export default function OnePieceComparator() {
     return arr
   }, [ligaResults, ligaSortDir])
 
-  const SortButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
-    <Button variant="outline" size="sm" onClick={onClick} className="h-8 gap-1 text-base">
-      <ArrowUpDown className="h-4 w-4" />
-      {label}
-    </Button>
-  )
-
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 text-lg"
-      style={{ fontFamily: 'Inter, \"SF Pro Display\", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif' }}
-    >
-      <header className="sticky top-0 z-50 w-full border-b bg-white/90 dark:bg-slate-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-950/80">
-        <div className="container flex h-20 items-center justify-between px-4">
+    <div className="min-h-screen bg-white dark:bg-neutral-950">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-950/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 dark:supports-[backdrop-filter]:bg-neutral-950/90">
+        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl shadow-md overflow-hidden">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-sm overflow-hidden">
               <img 
                 src="/jollylupa.png" 
-                alt="Jolly Lupa Logo" 
+                alt="Logo" 
                 className="h-full w-full object-cover"
-                 />
-              </div>
-            <div className="flex flex-col">
-              <h1 className="text-2xl md:text-3xl font-extrabold leading-none bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                One Piece Comparator
-              </h1>
-              <p className="text-base md:text-lg text-muted-foreground"></p>
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <h1 className="text-lg font-bold text-neutral-900 dark:text-white">One Piece Compare</h1>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Price comparison tool</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="hidden sm:flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-base md:text-lg px-3 py-1">
-              <Zap className="h-4 w-4" />
-              Live Prices
+            <Badge className="hidden sm:flex gap-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-medium">
+              <Zap className="h-3 w-3" />
+              Live Data
             </Badge>
-
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="default" className="gap-2 bg-white/60 dark:bg-slate-800/60 text-base h-10">
-                  <Filter className="h-5 w-5" />
-                  <span className="hidden sm:inline">Filters</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="bg-white/95 dark:bg-slate-950/95 backdrop-blur">
-                <SheetHeader>
-                  <SheetTitle className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent text-2xl">
-                    Filter Options
-                  </SheetTitle>
-                  <SheetDescription className="text-base">
-                    Refine your search results
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6 space-y-4">
-                  <div>
-                    <h4 className="text-lg font-medium mb-2">Price Range</h4>
-                    <div className="space-y-2">
-                      <Input placeholder="Min price" type="number" className="h-12 text-base" />
-                      <Input placeholder="Max price" type="number" className="h-12 text-base" />
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium mb-2">Condition</h4>
-                    <div className="space-y-2">
-                      {["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played"].map((condition) => (
-                        <label key={condition} className="flex items-center space-x-2 text-base">
-                          <input type="checkbox" className="rounded text-amber-500 focus:ring-amber-500 h-5 w-5" />
-                          <span className="text-base">{condition}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4">
-        <section className="py-12 text-center">
-          <div className="mx-auto max-w-4xl">
-            <div className="inline-flex items-center justify-center px-5 py-2 rounded-full bg-amber-100 text-amber-800 text-lg md:text-xl font-semibold mb-6">
-              <Sparkles className="h-5 w-5 mr-1.5" />
-              🤣🚢🔱🏴‍☠️☠️
-            </div>
-            <h2 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-              Find the <span className="text-amber-600">One Piece!</span>
-            </h2>
+      <main className="max-w-7xl mx-auto px-4">
+        {/* Search Section - Always Visible */}
+        <section className={`${hasSearched ? 'py-6 border-b border-neutral-200 dark:border-neutral-800' : 'py-16'} text-center transition-all duration-300`}>
+          <div className={`${hasSearched ? 'max-w-3xl' : 'max-w-2xl'} mx-auto`}>
+            {!hasSearched && (
+              <>
+                <div className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-amber-50 dark:bg-amber-950/30 mb-6 border border-amber-200 dark:border-amber-800/50">
+                  <Sparkles className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
+                  <span className="text-sm font-medium text-amber-900 dark:text-amber-200">Compare prices across platforms</span>
+                </div>
+                <h2 className="text-5xl md:text-6xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">
+                  Find the Best <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">Card Deals</span>
+                </h2>
+                <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-8">Search across TCGPlayer and Liga One Piece to find the best prices for your favorite cards</p>
+              </>
+            )}
 
-            <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
+            <form onSubmit={handleSearch} className={`relative mx-auto ${hasSearched ? 'mb-4' : 'mb-8'}`}>
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-7 w-7" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 h-5 w-5" />
                 <Input
                   type="text"
-                  placeholder="Search for One Piece cards..."
+                  placeholder="Search for cards..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-18 pl-16 pr-40 text-xl md:text-2xl border-2 border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 transition-all duration-200 shadow-lg"
+                  className="h-14 pl-12 pr-32 text-base border-2 border-neutral-200 dark:border-neutral-700 focus:border-amber-500 dark:focus:border-amber-500 focus:ring-0 rounded-lg shadow-sm dark:bg-neutral-900"
                 />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {!!searchQuery && (
-                    <Button type="button" variant="ghost" size="default" onClick={clearSearch} className="h-12 px-3">
-                      <XCircle className="h-6 w-6" />
+                    <Button type="button" variant="ghost" size="sm" onClick={clearSearch} className="h-10 px-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                      <X className="h-4 w-4" />
                     </Button>
                   )}
                   <Button
                     type="submit"
                     disabled={isSearching || !searchQuery.trim()}
-                    className="h-12 px-8 text-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-md"
+                    className="h-11 px-6 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm rounded-lg"
                   >
                     {isSearching ? (
                       <>
-                        <Loader2 className="w-6 h-6 mr-2 animate-spin" />
-                        Searching...
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Searching
                       </>
                     ) : (
                       "Search"
@@ -268,18 +224,18 @@ export default function OnePieceComparator() {
               </div>
             </form>
 
-            {recentSearches.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                <Badge variant="outline" className="px-3 py-1.5 text-base flex items-center gap-1">
-                  <History className="h-4 w-4" />
-                  Recent searches:
-                </Badge>
+            {!hasSearched && recentSearches.length > 0 && (
+              <div className="flex flex-wrap gap-2 justify-center">
+                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Recent:
+                </span>
                 {recentSearches.map((q) => (
                   <Button 
                     key={q} 
-                    variant="secondary" 
-                    size="default" 
-                    className="rounded-full text-base h-9" 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full text-xs border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900"
                     onClick={() => { setSearchQuery(q); setTimeout(() => handleSearch(), 0) }}
                   >
                     {q}
@@ -291,126 +247,113 @@ export default function OnePieceComparator() {
         </section>
 
         {!hasSearched && (
-          <section className="py-12">
-            <div className="grid gap-8 md:grid-cols-3">
-              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-900/30">
-                    <Search className="h-12 w-12 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <CardTitle className="text-3xl">Smart Search</CardTitle>
-                  <CardDescription className="text-xl">
-                    Find cards across multiple platforms with intelligent matching
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/30">
-                    <Coins className="h-12 w-12 text-green-600 dark:text-green-400" />
-                  </div>
-                  <CardTitle className="text-3xl">Live Conversion</CardTitle>
-                  <CardDescription className="text-xl">
-                    Automatic BRL to USD conversion with real-time exchange rates
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-900/30">
-                    <BarChart3 className="h-12 w-12 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <CardTitle className="text-3xl">Price Analysis</CardTitle>
-                  <CardDescription className="text-xl">
-                    Compare prices and find the best deals instantly
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+          <section className="py-12 pb-20">
+            <div className="grid gap-6 md:grid-cols-3">
+              {[
+                { icon: Search, title: "Smart Search", description: "Find cards across multiple platforms instantly" },
+                { icon: TrendingDown, title: "Price Tracking", description: "Compare real-time prices from different sellers" },
+                { icon: Zap, title: "Live Conversion", description: "Automatic currency conversion with exchange rates" },
+              ].map((feature, i) => (
+                <Card key={i} className="border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors bg-gradient-to-br from-white via-white to-neutral-50 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-800">
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                      <feature.icon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <CardTitle className="text-lg">{feature.title}</CardTitle>
+                    <CardDescription className="text-sm">{feature.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
             </div>
           </section>
-        )}
+        )} 
+        
 
+        {/* Search Results */}
         {hasSearched && (
           <section className="py-8">
-            <nav className="flex items-center space-x-1 text-lg text-muted-foreground mb-6">
-              <span>Home</span>
-              <ChevronRight className="h-6 w-6" />
-              <span>Search Results</span>
-              <ChevronRight className="h-6 w-6" />
-              <span className="text-foreground font-semibold">"{searchQuery}"</span>
-            </nav>
+            <div className="mb-8">
+              <nav className="flex items-center space-x-2 text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                <span>Home</span>
+                <ChevronRight className="h-4 w-4" />
+                <span>Results</span>
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-neutral-900 dark:text-white font-medium">"{searchQuery}"</span>
+              </nav>
 
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h3 className="text-4xl md:text-5xl font-extrabold text-foreground mb-2">
-                  {isSearching ? "Searching..." : "Search Results"}
-                </h3>
-                {!isSearching && (
-                  <p className="text-xl text-muted-foreground">
-                    Found {tcgResults.length + ligaResults.length} results for "{searchQuery}"
-                  </p>
-                )}
-              </div>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-3xl font-bold text-neutral-900 dark:text-white mb-1">
+                    {isSearching ? "Searching..." : "Results"}
+                  </h3>
+                  {!isSearching && (
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                      Found {tcgResults.length + ligaResults.length} results
+                    </p>
+                  )}
+                </div>
 
-              <div className="flex items-center gap-4">
-                <Badge variant="outline" className="text-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5">
-                  1 USD = R$ {(1 / exchangeRate).toFixed(2)} BRL
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
+                    <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">1 USD =</span>
+                    <span className="text-sm font-semibold text-neutral-900 dark:text-white">R$ {(1 / exchangeRate).toFixed(2)}</span>
+                  </div>
 
-                <div className="flex items-center gap-1 border rounded-lg p-1 bg-white/50 dark:bg-slate-800/50 backdrop-blur">
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
-                    size="default"
-                    onClick={() => setViewMode("grid")}
-                    className="h-11 w-11 p-0"
-                  >
-                    <Grid className="h-6 w-6" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "default" : "ghost"}
-                    size="default"
-                    onClick={() => setViewMode("list")}
-                    className="h-11 w-11 p-0"
-                  >
-                    <List className="h-6 w-6" />
-                  </Button>
+                  <div className="flex items-center gap-1 border border-neutral-200 dark:border-neutral-700 rounded-lg p-1 bg-neutral-50 dark:bg-neutral-900">
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("grid")}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Grid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("list")}
+                      className="h-8 w-8 p-0"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {isSearching ? (
-              <div className="text-center py-16">
-                <Loader2 className="w-20 h-20 mx-auto mb-4 animate-spin text-amber-500" />
-                <p className="text-2xl text-muted-foreground">Searching both platforms...</p>
+              <div className="text-center py-20">
+                <div className="flex justify-center mb-4">
+                  <Loader2 className="w-12 h-12 animate-spin text-amber-500" />
+                </div>
+                <p className="text-neutral-600 dark:text-neutral-400">Searching both platforms...</p>
               </div>
             ) : (
               <Tabs defaultValue="comparison" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-14 bg-slate-100 dark:bg-slate-800 p-1 text-lg">
+                <TabsList className="grid w-full grid-cols-3 h-11 bg-neutral-100 dark:bg-neutral-900 p-1 border border-neutral-200 dark:border-neutral-800 rounded-lg">
                   <TabsTrigger 
                     value="comparison" 
-                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-amber-700 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-amber-300 transition-all text-base md:text-lg"
+                    className="text-xs md:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-neutral-900 dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-white rounded-md transition-all"
                   >
-                    Price Comparison
+                    Comparison
                   </TabsTrigger>
                   <TabsTrigger 
                     value="tcgplayer" 
-                    className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-700 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-blue-300 transition-all text-base md:text-lg"
+                    className="text-xs md:text-sm flex items-center gap-1 justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-blue-400 rounded-md transition-all"
                   >
                     TCGPlayer
-                    {tcgResults.length > 0 && <Badge variant="secondary" className="text-sm">{tcgResults.length}</Badge>}
+                    {tcgResults.length > 0 && <Badge variant="secondary" className="text-xs ml-1">{tcgResults.length}</Badge>}
                   </TabsTrigger>
                   <TabsTrigger 
                     value="liga" 
-                    className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-700 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-green-300 transition-all text-base md:text-lg"
+                    className="text-xs md:text-sm flex items-center gap-1 justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-green-400 rounded-md transition-all"
                   >
                     Liga One Piece
-                    {ligaResults.length > 0 && <Badge variant="secondary" className="text-sm">{ligaResults.length}</Badge>}
+                    {ligaResults.length > 0 && <Badge variant="secondary" className="text-xs ml-1">{ligaResults.length}</Badge>}
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="comparison" className="mt-8">
+                <TabsContent value="comparison" className="mt-6">
                   <PriceComparison
                     tcgResults={tcgResults}
                     ligaResults={ligaResults}
@@ -418,172 +361,103 @@ export default function OnePieceComparator() {
                   />
                 </TabsContent>
 
-                <TabsContent value="tcgplayer" className="mt-8">
+                <TabsContent value="tcgplayer" className="mt-6">
                   {searchErrors.tcg ? (
-                    <div className="text-center py-16 text-destructive">
-                      <p className="text-2xl">{searchErrors.tcg}</p>
+                    <div className="flex items-center justify-center py-20 text-red-600 dark:text-red-400">
+                      <AlertCircle className="h-5 w-5 mr-2" />
+                      <p>{searchErrors.tcg}</p>
                     </div>
                   ) : sortedTcg.length > 0 ? (
-                    <div className="flex items-center justify-end mb-3 gap-2">
-                      <SortButton
-                        onClick={() => setTcgSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-                        label={`Market · ${tcgSortDir.toUpperCase()}`}
-                      />
-                      <Button variant={tcgSortKey === "low" ? "default" : "outline"} size="default" onClick={() => setTcgSortKey("low")} className="text-base h-9">Low</Button>
-                      <Button variant={tcgSortKey === "market" ? "default" : "outline"} size="default" onClick={() => setTcgSortKey("market")} className="text-base h-9">Market</Button>
-                      <Button variant={tcgSortKey === "high" ? "default" : "outline"} size="default" onClick={() => setTcgSortKey("high")} className="text-base h-9">High</Button>
-                    </div>
-                    ) : null}
-
-                  {sortedTcg.length > 0 ? (
-                    <div className={viewMode === "grid" ? "grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
-                      {sortedTcg.map((card) => (
-                        <Card
-                          key={card.productId}
-                          className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 shadow-md bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-800/70 group"
-                        >
-                          <div className="aspect-[3/4] bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 relative overflow-hidden">
-                            {card.imageUrl ? (
-                              <img
-                                src={card.imageUrl || "/placeholder.svg"}
-                                alt={card.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement
-                                  target.src = `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(card.name)}`
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <img
-                                  src={`/abstract-geometric-shapes.png?key=e90nn&height=400&width=300&query=${encodeURIComponent(card.name)}`}
-                                  alt={card.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                            )}
-                            <Badge className="absolute top-2 right-2 bg-blue-600 text-sm">TCGPlayer</Badge>
-                          </div>
-                          <CardContent className="p-6">
-                            <h4 className="font-semibold text-foreground mb-3 line-clamp-2 text-xl md:text-2xl">{card.name}</h4>
-                            {card.price && (
-                              <div className="space-y-3 text-lg" style={{ fontFamily: '\"Roboto Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace' }}>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">Market:</span>
-                                  <div className="text-right">
-                                    <div className="font-bold text-blue-600 dark:text-blue-400 text-xl">
-                                      ${card.price.marketPrice?.toFixed(2) || "N/A"}
-                                    </div>
-                                    {card.price.marketPrice && (
-                                      <div className="text-muted-foreground">
-                                        R$ {convertUSDToBRL(card.price.marketPrice).toFixed(2)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">Low:</span>
-                                  <div className="text-right">
-                                    <div>${card.price.lowPrice?.toFixed(2) || "N/A"}</div>
-                                    {card.price.lowPrice && (
-                                      <div className="text-sm text-muted-foreground">
-                                        R$ {convertUSDToBRL(card.price.lowPrice).toFixed(2)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">High:</span>
-                                  <div className="text-right">
-                                    <div>${card.price.highPrice?.toFixed(2) || "N/A"}</div>
-                                    {card.price.highPrice && (
-                                      <div className="text-sm text-muted-foreground">
-                                        R$ {convertUSDToBRL(card.price.highPrice).toFixed(2)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            <Button variant="outline" size="default" className="w-full mt-5 bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 text-base h-11" asChild>
-                              <a href={card.url} target="_blank" rel="noopener noreferrer">
-                                View on TCGPlayer
-                                <ExternalLink className="w-5 h-5 ml-2" />
-                              </a>
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 text-muted-foreground">
-                      <Search className="w-20 h-20 mx-auto mb-4 opacity-50" />
-                      <p className="text-2xl">No TCGPlayer results found</p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="liga" className="mt-8">
-                  {searchErrors.liga ? (
-                    <div className="text-center py-16 text-destructive">
-                      <p className="text-2xl">{searchErrors.liga}</p>
-                    </div>
-                  ) : sortedLiga.length > 0 ? (
                     <>
-                      <div className="flex items-center justify-end mb-3 gap-2">
-                        <SortButton onClick={() => setLigaSortDir((d) => (d === "asc" ? "desc" : "asc"))} label={`Price · ${ligaSortDir.toUpperCase()}`} />
+                      <div className="flex items-center gap-2 flex-wrap mb-4">
+                        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Sort:</span>
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => setTcgSortKey("market")}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              tcgSortKey === "market"
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                            }`}
+                          >
+                            Market Price
+                          </button>
+                          <button
+                            onClick={() => setTcgSortKey("low")}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              tcgSortKey === "low"
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                            }`}
+                          >
+                            Low Price
+                          </button>
+                          <button
+                            onClick={() => setTcgSortKey("high")}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              tcgSortKey === "high"
+                                ? 'bg-purple-500 text-white'
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                            }`}
+                          >
+                            High Price
+                          </button>
+                          <button
+                            onClick={() => setTcgSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all"
+                          >
+                            {tcgSortDir === "asc" ? "↑" : "↓"} {tcgSortDir === "asc" ? "Low to High" : "High to Low"}
+                          </button>
+                        </div>
                       </div>
 
-                      <div className={viewMode === "grid" ? "grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
-                        {sortedLiga.map((card, index) => (
+                      <div className={viewMode === "grid" ? "grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
+                        {sortedTcg.map((card) => (
                           <Card
-                            key={index}
-                            className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 shadow-md bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-800/70 group"
+                            key={card.productId}
+                            className="overflow-hidden hover:shadow-md transition-all duration-200 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 group"
                           >
-                            <div className="aspect-[3/4] bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 relative overflow-hidden">
+                            <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 relative overflow-hidden">
                               {card.imageUrl ? (
                                 <img
-                                  src={card.imageUrl || "/placeholder.svg"}
+                                  src={card.imageUrl}
                                   alt={card.name}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement
-                                    target.src = `/placeholder.svg?height=400&width=300&query=${encodeURIComponent(card.name)}`
+                                    target.src = `/placeholder.svg`
                                   }}
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <img
-                                    src={`/abstract-geometric-shapes.png?key=hssux&height=400&width=300&query=${encodeURIComponent(card.name)}`}
-                                    alt={card.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
+                                <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+                                  <span className="text-xs text-neutral-400">No image</span>
                                 </div>
                               )}
-                              <Badge className="absolute top-2 right-2 bg-green-600 text-sm">Liga One Piece</Badge>
+                              <Badge className="absolute top-2 right-2 bg-blue-500 text-white text-xs">TCGPlayer</Badge>
                             </div>
-                            <CardContent className="p-6">
-                              <h4 className="font-semibold text-foreground mb-3 line-clamp-2 text-xl md:text-2xl">{card.name}</h4>
-                              {card.price > 0 && (
-                                <div className="space-y-3 text-lg" style={{ fontFamily: '\"Roboto Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace' }}>
+                            <CardContent className="p-4">
+                              <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 line-clamp-2 text-sm">{card.name}</h4>
+                              {card.price && (
+                                <div className="space-y-2 text-xs">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">Price:</span>
+                                    <span className="text-neutral-600 dark:text-neutral-400">Market:</span>
                                     <div className="text-right">
-                                      <div className="font-bold text-green-600 dark:text-green-400 text-xl">
-                                        {formatLigaPriceWithUSD(card.price, card.priceUSD)}
+                                      <div className="font-bold text-blue-600 dark:text-blue-400">
+                                        ${card.price.marketPrice?.toFixed(2) || "N/A"}
                                       </div>
+                                      {card.price.marketPrice && (
+                                        <div className="text-neutral-500 dark:text-neutral-400">
+                                          R$ {convertUSDToBRL(card.price.marketPrice).toFixed(2)}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">Condition:</span>
-                                    <span>{card.condition || "NM"}</span>
-                                  </div>
                                 </div>
                               )}
-                              <Button variant="outline" size="default" className="w-full mt-5 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/20 text-base h-11" asChild>
+                              <Button variant="outline" size="sm" className="w-full mt-3 text-xs h-8 border-neutral-200 dark:border-neutral-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400" asChild>
                                 <a href={card.url} target="_blank" rel="noopener noreferrer">
-                                  View on Liga One Piece
-                                  <ExternalLink className="w-5 h-5 ml-2" />
+                                  View
+                                  <ExternalLink className="w-3 h-3 ml-1" />
                                 </a>
                               </Button>
                             </CardContent>
@@ -592,9 +466,90 @@ export default function OnePieceComparator() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-16 text-muted-foreground">
-                      <Search className="w-20 h-20 mx-auto mb-4 opacity-50" />
-                      <p className="text-2xl">No Liga One Piece results found</p>
+                    <div className="text-center py-20">
+                      <Search className="w-12 h-12 mx-auto mb-4 text-neutral-400" />
+                      <p className="text-neutral-600 dark:text-neutral-400">No results found</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="liga" className="mt-6">
+                  {searchErrors.liga ? (
+                    <div className="flex items-center justify-center py-20 text-red-600 dark:text-red-400">
+                      <AlertCircle className="h-5 w-5 mr-2" />
+                      <p>{searchErrors.liga}</p>
+                    </div>
+                  ) : sortedLiga.length > 0 ? (
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap mb-4">
+                        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Sort:</span>
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => setLigaSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              ligaSortDir === "asc"
+                                ? 'bg-green-500 text-white'
+                                : 'bg-purple-500 text-white'
+                            }`}
+                          >
+                            {ligaSortDir === "asc" ? "↑" : "↓"} {ligaSortDir === "asc" ? "Low to High" : "High to Low"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={viewMode === "grid" ? "grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
+                        {sortedLiga.map((card, index) => (
+                          <Card
+                            key={index}
+                            className="overflow-hidden hover:shadow-md transition-all duration-200 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 group"
+                          >
+                            <div className="aspect-[3/4] bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 relative overflow-hidden">
+                              {card.imageUrl ? (
+                                <img
+                                  src={card.imageUrl}
+                                  alt={card.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement
+                                    target.src = `/placeholder.svg`
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+                                  <span className="text-xs text-neutral-400">No image</span>
+                                </div>
+                              )}
+                              <Badge className="absolute top-2 right-2 bg-green-500 text-white text-xs">Liga One Piece</Badge>
+                            </div>
+                            <CardContent className="p-4">
+                              <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 line-clamp-2 text-sm">{card.name}</h4>
+                              {card.price > 0 && (
+                                <div className="space-y-2 text-xs">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-neutral-600 dark:text-neutral-400">Price:</span>
+                                    <div className="text-right">
+                                      <div className="font-bold text-green-600 dark:text-green-400">
+                                        {formatLigaPriceWithUSD(card.price, card.priceUSD)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <Button variant="outline" size="sm" className="w-full mt-3 text-xs h-8 border-neutral-200 dark:border-neutral-700 hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400" asChild>
+                                <a href={card.url} target="_blank" rel="noopener noreferrer">
+                                  View
+                                  <ExternalLink className="w-3 h-3 ml-1" />
+                                </a>
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-20">
+                      <Search className="w-12 h-12 mx-auto mb-4 text-neutral-400" />
+                      <p className="text-neutral-600 dark:text-neutral-400">No results found</p>
                     </div>
                   )}
                 </TabsContent>
@@ -604,23 +559,24 @@ export default function OnePieceComparator() {
         )}
       </main>
 
-      <footer className="border-t bg-white/50 dark:bg-slate-950/50 backdrop-blur mt-20">
-        <div className="container mx-auto px-4 py-12">
+      {/* Footer */}
+      <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 mt-20">
+        <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg shadow-md overflow-hidden">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-sm overflow-hidden">
                 <img 
-                src="/jollylupa.png" 
-                alt="Jolly Lupa Logo" 
-                className="h-full w-full object-cover"
-                  />
-                </div>
-              <span className="text-2xl md:text-3xl font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                One Piece Comparator
+                  src="/jollylupa.png" 
+                  alt="Logo" 
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <span className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                One Piece Compare
               </span>
             </div>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-md mx-auto">
-              😊
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-md mx-auto">
+              The simplest way to compare One Piece card prices across platforms
             </p>
           </div>
         </div>
