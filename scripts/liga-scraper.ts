@@ -52,7 +52,7 @@ export class LigaOnePieceScraper {
         }
       })
 
-      // ✅ Remover detecção de automation
+     
       await context.addInitScript(() => {
         Object.defineProperty(navigator, 'webdriver', { get: () => false })
       })
@@ -71,7 +71,7 @@ export class LigaOnePieceScraper {
   }
 
   async searchCards(query: string): Promise<LigaCard[]> {
-    // ✅ VERIFICAÇÃO ROBUSTA
+    
     if (!this.page || !this.browser) {
       console.log("❌ Scraper não está inicializado")
       throw new Error("Scraper not initialized")
@@ -88,20 +88,20 @@ export class LigaOnePieceScraper {
       
       console.log(`📍 Navegando para: ${searchUrl}`)
       
-      // ✅ NAVEGAÇÃO SIMPLES E CONFIÁVEL
+      
       await this.page.goto(searchUrl, {
         waitUntil: 'load',
         timeout: 30000
       })
 
-      // ✅ ESPERA PARA CARREGAMENTO COMPLETO
+      
       await this.page.waitForTimeout(5000)
 
-      // ✅ VERIFICAR SE CARREGOU CORRETAMENTE
+     
       const pageTitle = await this.page.title()
       console.log(`📄 Página carregada: ${pageTitle}`)
 
-      // ✅ EXTRAIR DADOS
+      
       const cards = await this.page.evaluate(() => {
         const results: any[] = []
         
@@ -175,13 +175,12 @@ export class LigaOnePieceScraper {
     } catch (error) {
       console.error("❌ Erro no scraping:", error)
       
-      // ✅ TENTAR RECRIAR A PÁGINA SE FECHADA
       if (this.page.isClosed() && this.browser && !this.isClosing) {
         console.log("🔄 Página fechada, tentando recriar...")
         try {
           const context = await this.browser.newContext()
           this.page = await context.newPage()
-          return await this.searchCards(query) // Retry
+          return await this.searchCards(query) 
         } catch (retryError) {
           console.error("❌ Falha ao recriar página:", retryError)
         }
@@ -231,7 +230,6 @@ export class LigaOnePieceScraper {
   }
 }
 
-// ✅ Função de teste para verificar se está funcionando
 export async function testScraper() {
   const scraper = new LigaOnePieceScraper()
 
@@ -266,7 +264,6 @@ export async function testScraper() {
   }
 }
 
-// ✅ Função de comparação de preços
 export function compareCardPrices(tcgCard: any, ligaCard: LigaCard) {
   const comparison = {
     cardName: `${ligaCard.name} ${ligaCard.numericCode}`,

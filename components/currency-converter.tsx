@@ -28,7 +28,6 @@ export function CurrencyConverter() {
     }
   }
 
-  // Auto-convert when amount changes (with debounce)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (amount && Number.parseFloat(amount) > 0) {

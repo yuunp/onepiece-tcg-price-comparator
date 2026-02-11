@@ -29,7 +29,6 @@ export async function convertCurrency(
 
     const conversion = await response.json()
     
-    // Cache the rate for future use
     if (!conversion.fallback) {
       cachedRate = {
         rate: conversion.rate,
@@ -41,7 +40,6 @@ export async function convertCurrency(
   } catch (error) {
     console.error("Currency conversion error:", error)
     
-    // Use cached rate if available and recent
     if (cachedRate && Date.now() - cachedRate.timestamp < CACHE_DURATION) {
       return {
         from,
@@ -56,8 +54,7 @@ export async function convertCurrency(
       }
     }
 
-    // Final fallback
-    const fallbackRate = 0.20 // Approximate BRL to USD
+    const fallbackRate = 0.20 // 
     return {
       from,
       to,
@@ -78,7 +75,7 @@ export async function getBRLToUSDRate(): Promise<number> {
     return conversion.rate
   } catch (error) {
     console.error("Error getting BRL to USD rate:", error)
-    return 0.20 // Fallback rate
+    return 0.20 // 
   }
 }
 

@@ -38,7 +38,6 @@ interface PriceComparisonProps {
   exchangeRate?: number
 }
 
-// ===== SISTEMA DE IDENTIFICAÇÃO DE VARIAÇÕES =====
 const identifyVariation = (numericCode: string): CardVariation => {
   const variations: { [key: string]: CardVariation } = {
     'E': {
@@ -124,7 +123,6 @@ const identifyVariation = (numericCode: string): CardVariation => {
   }
 }
 
-// ===== ALGORITMO 40% NOME - 30% SET - 30% CÓDIGO =====
 const extractCardNumber = (name: string): string | null => {
   if (!name) return null
   const patterns = [
@@ -166,7 +164,7 @@ const normalizeCode = (code: string): string => {
   return code.replace(/[-_][A-Z]{1,3}$/, '')
 }
 
-// 🎯 ALGORITMO 40% NOME - 30% SET - 30% CÓDIGO
+
 const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
   score: number
   reasons: string[]
@@ -175,7 +173,6 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
   const reasons: string[] = []
   let totalScore = 0
 
-  // === 30% NOME DO SET ===
   const tcgSetName = tcgCard.setName?.toLowerCase().trim()
   const ligaSetName = ligaCard.set?.toLowerCase().trim()
 
@@ -184,7 +181,6 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
     reasons.push(`📦 Same set: "${tcgSetName}" (30%)`)
   }
 
-  // === 40% NOME DA CARTA ===
   const tcgNameNormalized = normalizeName(tcgCard.name)
   const ligaNameNormalized = normalizeName(ligaCard.name)
 
@@ -199,7 +195,6 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
     }
   }
 
-  // === 30% CÓDIGO ===
   const tcgCode = tcgCard.extendedData?.find(d => d.name === 'Number')?.value || extractCardNumber(tcgCard.name)
   const ligaCode = ligaCard.numericCode
 
@@ -234,13 +229,11 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
   }
 }
 
-// 🔥 ALGORITMO PRINCIPAL
 const matchCards = (tcgCards: TCGPlayerCard[], ligaCards: LigaCard[]): CardMatch[] => {
   const matches: CardMatch[] = []
   const usedLigaIndices = new Set<number>()
   const usedTcgIndices = new Set<number>()
 
-  // PRIMEIRA PASSADA: MATCHES PERFEITOS (90%+)
   tcgCards.forEach((tcgCard, tcgIndex) => {
     let bestMatch = { index: -1, score: 0, analysis: { score: 0, reasons: [], method: '' } }
 
@@ -260,7 +253,6 @@ const matchCards = (tcgCards: TCGPlayerCard[], ligaCards: LigaCard[]): CardMatch
     }
   })
 
-  // SEGUNDA PASSADA: MATCHES BONS (60-79%)
   tcgCards.forEach((tcgCard, tcgIndex) => {
     if (usedTcgIndices.has(tcgIndex)) return
 
@@ -282,7 +274,6 @@ const matchCards = (tcgCards: TCGPlayerCard[], ligaCards: LigaCard[]): CardMatch
     }
   })
 
-  // CARTAS NÃO MATCHED
   tcgCards.forEach((card, index) => {
     if (!usedTcgIndices.has(index)) {
       matches.push({
@@ -359,7 +350,6 @@ const formatCurrency = (amount: number, currency: string = "USD"): string => {
   }).format(amount)
 }
 
-// ===== COMPONENTE PRINCIPAL =====
 
 export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }: PriceComparisonProps) => {
   const [sortBy, setSortBy] = React.useState<'savings' | 'match' | 'price-low' | 'price-high'>('savings')
