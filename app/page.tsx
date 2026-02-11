@@ -146,7 +146,16 @@ export default function OnePieceComparator() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setSearchQuery("")
+              setHasSearched(false)
+              setTcgResults([])
+              setLigaResults([])
+              setSearchErrors({})
+            }}
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg overflow-hidden ring-1 ring-border">
               <img 
                 src="/jollylupa.png" 
@@ -154,11 +163,11 @@ export default function OnePieceComparator() {
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col text-left">
               <h1 className="text-sm font-semibold text-foreground tracking-tight">One Piece Compare</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Price comparison tool</p>
             </div>
-          </div>
+          </button>
 
           <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary text-xs font-medium">
             <span className="relative flex h-1.5 w-1.5">
@@ -547,7 +556,17 @@ export default function OnePieceComparator() {
       <footer className="border-t border-border mt-20">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-10">
           <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setSearchQuery("")
+                setHasSearched(false)
+                setTcgResults([])
+                setLigaResults([])
+                setSearchErrors({})
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <div className="flex h-7 w-7 items-center justify-center rounded-md overflow-hidden ring-1 ring-border">
                 <img 
                   src="/jollylupa.png" 
@@ -556,7 +575,7 @@ export default function OnePieceComparator() {
                 />
               </div>
               <span className="text-sm font-semibold text-foreground">One Piece Compare</span>
-            </div>
+            </button>
             <p className="text-xs text-muted-foreground text-center max-w-sm">
               The simplest way to compare One Piece card prices across platforms.
             </p>
