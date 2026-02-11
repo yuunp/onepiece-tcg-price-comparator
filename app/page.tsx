@@ -7,24 +7,20 @@ import {
   Zap,
   ExternalLink,
   Loader2,
-  Filter,
   Grid,
   List,
   ChevronRight,
-  Sparkles,
   TrendingDown,
-  BarChart3,
   X,
-  ArrowUpDown,
   Clock,
   AlertCircle,
+  ArrowUpDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { searchTCGPlayer, type TCGPlayerCard } from "@/lib/tcgplayer"
 import { searchLigaOnePiece, type LigaCard, formatLigaPriceWithUSD } from "@/lib/liga"
 import { PriceComparison } from "@/components/price-comparison"
@@ -146,75 +142,75 @@ export default function OnePieceComparator() {
   }, [ligaResults, ligaSortDir])
 
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-950/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 dark:supports-[backdrop-filter]:bg-neutral-950/90">
-        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-sm overflow-hidden">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg overflow-hidden ring-1 ring-border">
               <img 
                 src="/jollylupa.png" 
-                alt="Logo" 
+                alt="One Piece Compare logo" 
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="flex flex-col gap-0.5">
-              <h1 className="text-lg font-bold text-neutral-900 dark:text-white">One Piece Compare</h1>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Price comparison tool</p>
+            <div className="flex flex-col">
+              <h1 className="text-sm font-semibold text-foreground tracking-tight">One Piece Compare</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Price comparison tool</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Badge className="hidden sm:flex gap-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 font-medium">
-              <Zap className="h-3 w-3" />
-              Live Data
-            </Badge>
-          </div>
+          <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary text-xs font-medium">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+            </span>
+            Live
+          </Badge>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4">
-        {/* Search Section - Always Visible */}
-        <section className={`${hasSearched ? 'py-6 border-b border-neutral-200 dark:border-neutral-800' : 'py-16'} text-center transition-all duration-300`}>
+      <main className="max-w-7xl mx-auto px-4 md:px-6">
+        {/* Search Section */}
+        <section className={`${hasSearched ? 'py-6' : 'py-20 md:py-28'} text-center transition-all duration-500`}>
           <div className={`${hasSearched ? 'max-w-3xl' : 'max-w-2xl'} mx-auto`}>
             {!hasSearched && (
-              <>
-                <div className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-amber-50 dark:bg-amber-950/30 mb-6 border border-amber-200 dark:border-amber-800/50">
-                  <Sparkles className="h-4 w-4 mr-2 text-amber-600 dark:text-amber-400" />
-                  <span className="text-sm font-medium text-amber-900 dark:text-amber-200">Compare prices across platforms</span>
-                </div>
-                <h2 className="text-5xl md:text-6xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">
-                  Find the Best <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">Card Deals</span>
+              <div className="mb-10">
+                <p className="text-xs font-medium uppercase tracking-widest text-primary mb-4">Compare prices across platforms</p>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance">
+                  Find the Best Card Deals
                 </h2>
-                <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-8">Search across TCGPlayer and Liga One Piece to find the best prices for your favorite cards</p>
-              </>
+                <p className="text-base text-muted-foreground mt-4 max-w-lg mx-auto leading-relaxed">
+                  Search across TCGPlayer and Liga One Piece to find the best prices for your favorite cards.
+                </p>
+              </div>
             )}
 
-            <form onSubmit={handleSearch} className={`relative mx-auto ${hasSearched ? 'mb-4' : 'mb-8'}`}>
+            <form onSubmit={handleSearch} className={`relative mx-auto ${hasSearched ? 'mb-0' : 'mb-8'}`}>
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 h-5 w-5" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="text"
                   placeholder="Search for cards..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-14 pl-12 pr-32 text-base border-2 border-neutral-200 dark:border-neutral-700 focus:border-amber-500 dark:focus:border-amber-500 focus:ring-0 rounded-lg shadow-sm dark:bg-neutral-900"
+                  className="h-12 pl-11 pr-28 text-sm bg-secondary border-border focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg placeholder:text-muted-foreground"
                 />
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {!!searchQuery && (
-                    <Button type="button" variant="ghost" size="sm" onClick={clearSearch} className="h-10 px-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                    <Button type="button" variant="ghost" size="sm" onClick={clearSearch} className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground">
                       <X className="h-4 w-4" />
                     </Button>
                   )}
                   <Button
                     type="submit"
                     disabled={isSearching || !searchQuery.trim()}
-                    className="h-11 px-6 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm rounded-lg"
+                    className="h-9 px-5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-md"
                   >
                     {isSearching ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Searching
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        <span className="hidden sm:inline">Searching</span>
                       </>
                     ) : (
                       "Search"
@@ -226,8 +222,8 @@ export default function OnePieceComparator() {
 
             {!hasSearched && recentSearches.length > 0 && (
               <div className="flex flex-wrap gap-2 justify-center">
-                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
                   Recent:
                 </span>
                 {recentSearches.map((q) => (
@@ -235,7 +231,7 @@ export default function OnePieceComparator() {
                     key={q} 
                     variant="outline" 
                     size="sm" 
-                    className="rounded-full text-xs border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                    className="rounded-full text-xs h-7 border-border text-secondary-foreground hover:bg-secondary hover:text-foreground"
                     onClick={() => { setSearchQuery(q); setTimeout(() => handleSearch(), 0) }}
                   >
                     {q}
@@ -246,110 +242,116 @@ export default function OnePieceComparator() {
           </div>
         </section>
 
+        {/* Feature Cards - Home Only */}
         {!hasSearched && (
-          <section className="py-12 pb-20">
-            <div className="grid gap-6 md:grid-cols-3">
+          <section className="pb-20">
+            <div className="grid gap-4 md:grid-cols-3">
               {[
                 { icon: Search, title: "Smart Search", description: "Find cards across multiple platforms instantly" },
                 { icon: TrendingDown, title: "Price Tracking", description: "Compare real-time prices from different sellers" },
-                { icon: Zap, title: "Live Conversion", description: "Automatic currency conversion with exchange rates" },
+                { icon: Zap, title: "Live Conversion", description: "Automatic currency conversion with live rates" },
               ].map((feature, i) => (
-                <Card key={i} className="border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors bg-gradient-to-br from-white via-white to-neutral-50 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-800">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                      <feature.icon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                <Card key={i} className="bg-card border-border hover:border-primary/30 transition-colors group">
+                  <CardHeader className="text-center pb-3">
+                    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                      <feature.icon className="h-5 w-5 text-primary" />
                     </div>
-                    <CardTitle className="text-lg">{feature.title}</CardTitle>
-                    <CardDescription className="text-sm">{feature.description}</CardDescription>
+                    <CardTitle className="text-sm font-semibold text-foreground">{feature.title}</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground">{feature.description}</CardDescription>
                   </CardHeader>
                 </Card>
               ))}
             </div>
           </section>
         )} 
-        
 
         {/* Search Results */}
         {hasSearched && (
-          <section className="py-8">
-            <div className="mb-8">
-              <nav className="flex items-center space-x-2 text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                <span>Home</span>
-                <ChevronRight className="h-4 w-4" />
-                <span>Results</span>
-                <ChevronRight className="h-4 w-4" />
-                <span className="text-neutral-900 dark:text-white font-medium">"{searchQuery}"</span>
-              </nav>
+          <section className="py-6">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-6" aria-label="Breadcrumb">
+              <button onClick={clearSearch} className="hover:text-foreground transition-colors">Home</button>
+              <ChevronRight className="h-3 w-3" />
+              <span>Results</span>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-foreground font-medium">{'"'}{searchQuery}{'"'}</span>
+            </nav>
 
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-3xl font-bold text-neutral-900 dark:text-white mb-1">
-                    {isSearching ? "Searching..." : "Results"}
-                  </h3>
-                  {!isSearching && (
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                      Found {tcgResults.length + ligaResults.length} results
-                    </p>
-                  )}
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground">
+                  {isSearching ? "Searching..." : "Results"}
+                </h3>
+                {!isSearching && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Found {tcgResults.length + ligaResults.length} results across platforms
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary border border-border text-xs">
+                  <span className="text-muted-foreground">1 USD =</span>
+                  <span className="font-semibold text-foreground font-mono">R$ {(1 / exchangeRate).toFixed(2)}</span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
-                    <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">1 USD =</span>
-                    <span className="text-sm font-semibold text-neutral-900 dark:text-white">R$ {(1 / exchangeRate).toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex items-center gap-1 border border-neutral-200 dark:border-neutral-700 rounded-lg p-1 bg-neutral-50 dark:bg-neutral-900">
-                    <Button
-                      variant={viewMode === "grid" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setViewMode("grid")}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Grid className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === "list" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setViewMode("list")}
-                      className="h-8 w-8 p-0"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex items-center border border-border rounded-md p-0.5 bg-secondary">
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                    className={`h-7 w-7 p-0 ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Grid className="h-3.5 w-3.5" />
+                    <span className="sr-only">Grid view</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className={`h-7 w-7 p-0 ${viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    <span className="sr-only">List view</span>
+                  </Button>
                 </div>
               </div>
             </div>
 
             {isSearching ? (
-              <div className="text-center py-20">
-                <div className="flex justify-center mb-4">
-                  <Loader2 className="w-12 h-12 animate-spin text-amber-500" />
+              <div className="text-center py-24">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
-                <p className="text-neutral-600 dark:text-neutral-400">Searching both platforms...</p>
+                <p className="text-sm text-muted-foreground">Searching both platforms...</p>
               </div>
             ) : (
               <Tabs defaultValue="comparison" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-11 bg-neutral-100 dark:bg-neutral-900 p-1 border border-neutral-200 dark:border-neutral-800 rounded-lg">
+                <TabsList className="grid w-full grid-cols-3 h-10 bg-secondary p-1 border border-border rounded-lg">
                   <TabsTrigger 
                     value="comparison" 
-                    className="text-xs md:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-neutral-900 dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-white rounded-md transition-all"
+                    className="text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md transition-all"
                   >
                     Comparison
                   </TabsTrigger>
                   <TabsTrigger 
                     value="tcgplayer" 
-                    className="text-xs md:text-sm flex items-center gap-1 justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-blue-400 rounded-md transition-all"
+                    className="text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md transition-all"
                   >
                     TCGPlayer
-                    {tcgResults.length > 0 && <Badge variant="secondary" className="text-xs ml-1">{tcgResults.length}</Badge>}
+                    {tcgResults.length > 0 && (
+                      <span className="ml-1.5 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{tcgResults.length}</span>
+                    )}
                   </TabsTrigger>
                   <TabsTrigger 
                     value="liga" 
-                    className="text-xs md:text-sm flex items-center gap-1 justify-center data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 dark:data-[state=active]:bg-neutral-800 dark:data-[state=active]:text-green-400 rounded-md transition-all"
+                    className="text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md transition-all"
                   >
                     Liga One Piece
-                    {ligaResults.length > 0 && <Badge variant="secondary" className="text-xs ml-1">{ligaResults.length}</Badge>}
+                    {ligaResults.length > 0 && (
+                      <span className="ml-1.5 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{ligaResults.length}</span>
+                    )}
                   </TabsTrigger>
                 </TabsList>
 
@@ -363,61 +365,44 @@ export default function OnePieceComparator() {
 
                 <TabsContent value="tcgplayer" className="mt-6">
                   {searchErrors.tcg ? (
-                    <div className="flex items-center justify-center py-20 text-red-600 dark:text-red-400">
-                      <AlertCircle className="h-5 w-5 mr-2" />
-                      <p>{searchErrors.tcg}</p>
+                    <div className="flex items-center justify-center py-20 text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      <p className="text-sm">{searchErrors.tcg}</p>
                     </div>
                   ) : sortedTcg.length > 0 ? (
                     <>
-                      <div className="flex items-center gap-2 flex-wrap mb-4">
-                        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Sort:</span>
-                        <div className="flex gap-2 flex-wrap">
+                      {/* Sort Controls */}
+                      <div className="flex items-center gap-2 flex-wrap mb-5">
+                        <span className="text-xs text-muted-foreground font-medium">Sort:</span>
+                        {(["market", "low", "high"] as const).map((key) => (
                           <button
-                            onClick={() => setTcgSortKey("market")}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              tcgSortKey === "market"
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                            key={key}
+                            onClick={() => setTcgSortKey(key)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                              tcgSortKey === key
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-secondary text-secondary-foreground hover:bg-muted hover:text-foreground border border-border'
                             }`}
                           >
-                            Market Price
+                            {key === "market" ? "Market" : key === "low" ? "Low" : "High"} Price
                           </button>
-                          <button
-                            onClick={() => setTcgSortKey("low")}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              tcgSortKey === "low"
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                            }`}
-                          >
-                            Low Price
-                          </button>
-                          <button
-                            onClick={() => setTcgSortKey("high")}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              tcgSortKey === "high"
-                                ? 'bg-purple-500 text-white'
-                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                            }`}
-                          >
-                            High Price
-                          </button>
-                          <button
-                            onClick={() => setTcgSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all"
-                          >
-                            {tcgSortDir === "asc" ? "↑" : "↓"} {tcgSortDir === "asc" ? "Low to High" : "High to Low"}
-                          </button>
-                        </div>
+                        ))}
+                        <button
+                          onClick={() => setTcgSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-secondary text-secondary-foreground hover:bg-muted hover:text-foreground border border-border transition-all flex items-center gap-1"
+                        >
+                          <ArrowUpDown className="h-3 w-3" />
+                          {tcgSortDir === "asc" ? "Low to High" : "High to Low"}
+                        </button>
                       </div>
 
-                      <div className={viewMode === "grid" ? "grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
+                      <div className={viewMode === "grid" ? "grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
                         {sortedTcg.map((card) => (
                           <Card
                             key={card.productId}
-                            className="overflow-hidden hover:shadow-md transition-all duration-200 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 group"
+                            className="overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-200 group"
                           >
-                            <div className="aspect-[3/4] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 relative overflow-hidden">
+                            <div className="aspect-[3/4] bg-secondary relative overflow-hidden">
                               {card.imageUrl ? (
                                 <img
                                   src={card.imageUrl}
@@ -429,24 +414,24 @@ export default function OnePieceComparator() {
                                   }}
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
-                                  <span className="text-xs text-neutral-400">No image</span>
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="text-xs text-muted-foreground">No image</span>
                                 </div>
                               )}
-                              <Badge className="absolute top-2 right-2 bg-blue-500 text-white text-xs">TCGPlayer</Badge>
+                              <Badge className="absolute top-2 right-2 bg-[#3b82f6] text-[#ffffff] text-[10px] font-medium">TCGPlayer</Badge>
                             </div>
                             <CardContent className="p-4">
-                              <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 line-clamp-2 text-sm">{card.name}</h4>
+                              <h4 className="font-semibold text-foreground mb-3 line-clamp-2 text-sm leading-snug">{card.name}</h4>
                               {card.price && (
-                                <div className="space-y-2 text-xs">
+                                <div className="space-y-1.5 text-xs">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-neutral-600 dark:text-neutral-400">Market:</span>
+                                    <span className="text-muted-foreground">Market:</span>
                                     <div className="text-right">
-                                      <div className="font-bold text-blue-600 dark:text-blue-400">
+                                      <div className="font-bold text-primary font-mono">
                                         ${card.price.marketPrice?.toFixed(2) || "N/A"}
                                       </div>
                                       {card.price.marketPrice && (
-                                        <div className="text-neutral-500 dark:text-neutral-400">
+                                        <div className="text-muted-foreground font-mono">
                                           R$ {convertUSDToBRL(card.price.marketPrice).toFixed(2)}
                                         </div>
                                       )}
@@ -454,9 +439,9 @@ export default function OnePieceComparator() {
                                   </div>
                                 </div>
                               )}
-                              <Button variant="outline" size="sm" className="w-full mt-3 text-xs h-8 border-neutral-200 dark:border-neutral-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 dark:hover:text-blue-400" asChild>
+                              <Button variant="outline" size="sm" className="w-full mt-3 text-xs h-8 border-border hover:bg-secondary hover:text-foreground" asChild>
                                 <a href={card.url} target="_blank" rel="noopener noreferrer">
-                                  View
+                                  View on TCGPlayer
                                   <ExternalLink className="w-3 h-3 ml-1" />
                                 </a>
                               </Button>
@@ -466,44 +451,41 @@ export default function OnePieceComparator() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-20">
-                      <Search className="w-12 h-12 mx-auto mb-4 text-neutral-400" />
-                      <p className="text-neutral-600 dark:text-neutral-400">No results found</p>
+                    <div className="text-center py-24">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary mb-4">
+                        <Search className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No results found on TCGPlayer</p>
                     </div>
                   )}
                 </TabsContent>
 
                 <TabsContent value="liga" className="mt-6">
                   {searchErrors.liga ? (
-                    <div className="flex items-center justify-center py-20 text-red-600 dark:text-red-400">
-                      <AlertCircle className="h-5 w-5 mr-2" />
-                      <p>{searchErrors.liga}</p>
+                    <div className="flex items-center justify-center py-20 text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      <p className="text-sm">{searchErrors.liga}</p>
                     </div>
                   ) : sortedLiga.length > 0 ? (
                     <>
-                      <div className="flex items-center gap-2 flex-wrap mb-4">
-                        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Sort:</span>
-                        <div className="flex gap-2 flex-wrap">
-                          <button
-                            onClick={() => setLigaSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              ligaSortDir === "asc"
-                                ? 'bg-green-500 text-white'
-                                : 'bg-purple-500 text-white'
-                            }`}
-                          >
-                            {ligaSortDir === "asc" ? "↑" : "↓"} {ligaSortDir === "asc" ? "Low to High" : "High to Low"}
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2 flex-wrap mb-5">
+                        <span className="text-xs text-muted-foreground font-medium">Sort:</span>
+                        <button
+                          onClick={() => setLigaSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground transition-all flex items-center gap-1"
+                        >
+                          <ArrowUpDown className="h-3 w-3" />
+                          {ligaSortDir === "asc" ? "Low to High" : "High to Low"}
+                        </button>
                       </div>
 
-                      <div className={viewMode === "grid" ? "grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
+                      <div className={viewMode === "grid" ? "grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-3"}>
                         {sortedLiga.map((card, index) => (
                           <Card
                             key={index}
-                            className="overflow-hidden hover:shadow-md transition-all duration-200 border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 group"
+                            className="overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-200 group"
                           >
-                            <div className="aspect-[3/4] bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 relative overflow-hidden">
+                            <div className="aspect-[3/4] bg-secondary relative overflow-hidden">
                               {card.imageUrl ? (
                                 <img
                                   src={card.imageUrl}
@@ -515,29 +497,29 @@ export default function OnePieceComparator() {
                                   }}
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
-                                  <span className="text-xs text-neutral-400">No image</span>
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="text-xs text-muted-foreground">No image</span>
                                 </div>
                               )}
-                              <Badge className="absolute top-2 right-2 bg-green-500 text-white text-xs">Liga One Piece</Badge>
+                              <Badge className="absolute top-2 right-2 bg-[#22c55e] text-[#ffffff] text-[10px] font-medium">Liga One Piece</Badge>
                             </div>
                             <CardContent className="p-4">
-                              <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 line-clamp-2 text-sm">{card.name}</h4>
+                              <h4 className="font-semibold text-foreground mb-3 line-clamp-2 text-sm leading-snug">{card.name}</h4>
                               {card.price > 0 && (
-                                <div className="space-y-2 text-xs">
+                                <div className="space-y-1.5 text-xs">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-neutral-600 dark:text-neutral-400">Price:</span>
+                                    <span className="text-muted-foreground">Price:</span>
                                     <div className="text-right">
-                                      <div className="font-bold text-green-600 dark:text-green-400">
+                                      <div className="font-bold text-primary font-mono">
                                         {formatLigaPriceWithUSD(card.price, card.priceUSD)}
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                               )}
-                              <Button variant="outline" size="sm" className="w-full mt-3 text-xs h-8 border-neutral-200 dark:border-neutral-700 hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400" asChild>
+                              <Button variant="outline" size="sm" className="w-full mt-3 text-xs h-8 border-border hover:bg-secondary hover:text-foreground" asChild>
                                 <a href={card.url} target="_blank" rel="noopener noreferrer">
-                                  View
+                                  View on Liga
                                   <ExternalLink className="w-3 h-3 ml-1" />
                                 </a>
                               </Button>
@@ -547,9 +529,11 @@ export default function OnePieceComparator() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-20">
-                      <Search className="w-12 h-12 mx-auto mb-4 text-neutral-400" />
-                      <p className="text-neutral-600 dark:text-neutral-400">No results found</p>
+                    <div className="text-center py-24">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary mb-4">
+                        <Search className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">No results found on Liga One Piece</p>
                     </div>
                   )}
                 </TabsContent>
@@ -560,23 +544,21 @@ export default function OnePieceComparator() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 mt-20">
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-sm overflow-hidden">
+      <footer className="border-t border-border mt-20">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-10">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md overflow-hidden ring-1 ring-border">
                 <img 
                   src="/jollylupa.png" 
                   alt="Logo" 
                   className="h-full w-full object-cover"
                 />
               </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                One Piece Compare
-              </span>
+              <span className="text-sm font-semibold text-foreground">One Piece Compare</span>
             </div>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-md mx-auto">
-              The simplest way to compare One Piece card prices across platforms
+            <p className="text-xs text-muted-foreground text-center max-w-sm">
+              The simplest way to compare One Piece card prices across platforms.
             </p>
           </div>
         </div>
