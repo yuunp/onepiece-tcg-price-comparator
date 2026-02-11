@@ -20,7 +20,7 @@
 - **Live Currency Conversion**: Real-time BRL ↔ USD rates
 - **Price Comparison**: Side-by-side price analysis
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
 - **React**: 19
