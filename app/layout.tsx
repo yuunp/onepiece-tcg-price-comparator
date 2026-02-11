@@ -1,9 +1,17 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
+const inter = Inter({ subsets: ['latin'] })
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
+
 export const metadata: Metadata = {
-  title: 'One Piece Compare',
-  description: 'Compare One Piece card prices across platforms',
+  title: 'One Piece Compare - Card Price Comparison',
+  description: 'Compare One Piece TCG card prices across TCGPlayer and Liga One Piece. Find the best deals instantly.',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#f8f5f0',
 }
 
 export default function RootLayout({
@@ -14,13 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/jollylupawhitebg.png" />
-        {/* Google Fonts - Inter and Geist Mono */}
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className={`${inter.className} ${jetbrainsMono.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   )
 }
