@@ -253,10 +253,6 @@ const formatCurrency = (amount: number, currency: string = "USD"): string => {
   }).format(amount)
 }
 
-/* ================================================================
-   COMPONENT
-   ================================================================ */
-
 export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }: PriceComparisonProps) => {
   const [sortBy, setSortBy] = React.useState<'savings' | 'match' | 'price-low' | 'price-high'>('savings')
 
@@ -452,9 +448,6 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
   )
 }
 
-/* ================================================================
-   SUB-COMPONENTS
-   ================================================================ */
 
 function StatCard({ value, label, color }: { value: string | number; label: string; color: string }) {
   return (

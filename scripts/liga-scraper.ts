@@ -70,6 +70,100 @@ export class LigaOnePieceScraper {
     }
   }
 
+  private async clicarVerMais(): Promise<boolean> {
+    if (!this.page) return false
+
+    const seletoresPossiveis = [
+      'input.exibir-mais',                    // ← CORRETO - o seletor do botão na Liga One Piece
+      '#exibir_mais_cards input',
+      'button:has-text("Exibir mais")',
+      '.btn-more', 
+      '.load-more',
+      'a[href*="viewmore"]',
+      'button.pagination-next',
+      '.pagination button:last-child',
+      '[data-action="load-more"]'
+    ];
+
+    for (const seletor of seletoresPossiveis) {
+      try {
+        const botao = await this.page.$(seletor)
+        if (botao) {
+          console.log(`🔘 Botão 'Exibir Mais' encontrado com seletor: ${seletor}`)
+          await botao.click()
+          await this.page.waitForTimeout(2000) // Aguarda carregamento dos novos cards
+          return true
+        }
+      } catch (e) {
+        // Continua para próximo seletor
+      }
+    }
+    
+    return false
+  }
+
+  private async scroll(): Promise<boolean> {
+    if (!this.page) return false
+
+    const heightBefore = await this.page.evaluate(() => document.body.scrollHeight)
+    
+    await this.page.evaluate(() => {
+      window.scrollBy(0, window.innerHeight * 3)
+    })
+
+    await this.page.waitForTimeout(2000)
+
+    const heightAfter = await this.page.evaluate(() => document.body.scrollHeight)
+    
+    return heightAfter > heightBefore
+  }
+
+  private async carregarTodosProdutos(): Promise<void> {
+    if (!this.page) return
+
+    console.log("📍 Iniciando carregamento de todos os produtos...")
+    
+    const maxAttempts = 20
+    let tentativa = 0
+    let cardsAntes = 0
+
+    while (tentativa < maxAttempts) {
+      tentativa++
+      
+      const cardsAtual = await this.page.evaluate(() => {
+        return document.querySelectorAll('.box.p25, .mtg-single, .card-item').length
+      })
+
+      console.log(`📍 Tentativa ${tentativa} de ${maxAttempts} | Cards carregados: ${cardsAtual}`)
+
+      if (cardsAtual === cardsAntes) {
+        console.log("✅ Nenhum novo card foi carregado. Todas as páginas foram visitadas.")
+        break
+      }
+
+      cardsAntes = cardsAtual
+
+      const botaoClicado = await this.clicarVerMais()
+      
+      if (botaoClicado) {
+        console.log("🔘 Botão 'Exibir Mais' clicado!")
+        continue
+      }
+
+      const scrollRealizado = await this.scroll()
+      
+      if (scrollRealizado) {
+        console.log("📜 Scroll realizado!")
+        continue
+      }
+
+      console.log("⚠️ Nenhuma ação de carregamento foi realizada. Finalizando.")
+      break
+    }
+
+    console.log(`✅ Carregamento concluído em ${tentativa} tentativas`)
+  }
+
   async searchCards(query: string): Promise<LigaCard[]> {
     
     if (!this.page || !this.browser) {
@@ -95,7 +189,9 @@ export class LigaOnePieceScraper {
       })
 
       
-      await this.page.waitForTimeout(5000)
+      await this.page.waitForTimeout(3000)
+
+      await this.carregarTodosProdutos()
 
      
       const pageTitle = await this.page.title()
