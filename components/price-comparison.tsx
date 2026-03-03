@@ -12,7 +12,7 @@ type MatchType = "perfect" | "high" | "medium" | "none"
 
 interface CardVariation {
   code: string
-  name: string 
+  name: string
   description: string
   rarity?: string
   emoji: string
@@ -51,7 +51,7 @@ const identifyVariation = (numericCode: string): CardVariation => {
   }
 
   const suffix = numericCode.split('-').pop()?.replace(/^\d+/, '') || ''
-  
+
   return variations[suffix] || {
     code: suffix,
     name: 'Standard',
@@ -71,29 +71,29 @@ const extractCardNumber = (name: string): string | null => {
     /(P-\d{3}[A-Z]*)/i,
     /([A-Z]{2,4}\d{1,2}-\d{3}[A-Z]*)/i
   ]
-  
+
   for (const pattern of patterns) {
     const match = name.match(pattern)
     if (match) return match[1].toUpperCase()
   }
-  
+
   return null
 }
 
 const normalizeName = (name: string): string => {
   if (!name) return ''
-  
+
   let cleaned = name.replace(/(OP\d{2}-\d{3}[A-Z]*)/gi, '')
-                   .replace(/(ST\d{2}-\d{3}[A-Z]*)/gi, '')
-                   .replace(/(EB\d{2}-\d{3}[A-Z]*)/gi, '')
-                   .replace(/(P-\d{3}[A-Z]*)/gi, '')
-                   .replace(/([A-Z]{2,4}\d{1,2}-\d{3}[A-Z]*)/gi, '')
-  
+    .replace(/(ST\d{2}-\d{3}[A-Z]*)/gi, '')
+    .replace(/(EB\d{2}-\d{3}[A-Z]*)/gi, '')
+    .replace(/(P-\d{3}[A-Z]*)/gi, '')
+    .replace(/([A-Z]{2,4}\d{1,2}-\d{3}[A-Z]*)/gi, '')
+
   cleaned = cleaned.replace(/\s+/g, ' ')
-                  .replace(/[\(\]\[]/g, '')
-                  .trim()
-                  .toLowerCase()
-  
+    .replace(/[\(\]\[]/g, '')
+    .trim()
+    .toLowerCase()
+
   return cleaned
 }
 
@@ -110,7 +110,7 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
   const reasons: string[] = []
   let totalScore = 0
 
-  const tcgSetName = tcgCard.setName?.toLowerCase().trim()
+  const tcgSetName = (tcgCard as any).groupName?.toLowerCase().trim()
   const ligaSetName = ligaCard.set?.toLowerCase().trim()
 
   if (tcgSetName && ligaSetName && tcgSetName === ligaSetName) {
@@ -125,8 +125,8 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
     if (tcgNameNormalized === ligaNameNormalized) {
       totalScore += 40
       reasons.push(`Identical name: "${tcgNameNormalized}" (40%)`)
-    } else if (tcgNameNormalized.includes(ligaNameNormalized) || 
-               ligaNameNormalized.includes(tcgNameNormalized)) {
+    } else if (tcgNameNormalized.includes(ligaNameNormalized) ||
+      ligaNameNormalized.includes(tcgNameNormalized)) {
       totalScore += 0
       reasons.push(`Names similar: "${tcgNameNormalized}" ~ "${ligaNameNormalized}" (25%)`)
     }
@@ -138,7 +138,7 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
   if (tcgCode && ligaCode) {
     const tcgBase = normalizeCode(tcgCode)
     const ligaBase = normalizeCode(ligaCode)
-    
+
     if (tcgBase === ligaBase) {
       totalScore += 30
       reasons.push(`Base code: ${tcgBase} (30%)`)
@@ -153,7 +153,7 @@ const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
   }
 
   const finalScore = Math.min(totalScore / 100, 1)
-  
+
   let method = 'Basic Matching'
   if (finalScore >= 0.9) method = 'Perfect Match'
   else if (finalScore >= 0.7) method = 'Good Match'
@@ -226,18 +226,18 @@ const createCardMatch = (tcgCard: TCGPlayerCard, ligaCard: LigaCard, analysis: {
 }): CardMatch => {
   const tcgPrice = tcgCard.price?.marketPrice || 0
   const ligaPriceUSD = ligaCard.price * 0.19
-  
+
   let bestPrice: BestPrice = "tie"
   let savings = 0
-  
+
   if (tcgPrice < ligaPriceUSD) { bestPrice = "tcg"; savings = ligaPriceUSD - tcgPrice }
   else if (tcgPrice > ligaPriceUSD) { bestPrice = "liga"; savings = tcgPrice - ligaPriceUSD }
-  
+
   let matchType: MatchType = "none"
   if (analysis.score >= 0.9) matchType = "perfect"
   else if (analysis.score >= 0.7) matchType = "high"
   else if (analysis.score >= 0.5) matchType = "medium"
-  
+
   return {
     tcgCard, ligaCard, similarity: analysis.score, bestPrice, savings, matchType,
     matchMethod: analysis.method, confidenceScore: Math.round(analysis.score * 100),
@@ -307,16 +307,16 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
   return (
     <div className="space-y-8">
       {/* Stats bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
-        <StatCard value={stats.perfect} label="Perfect Matches" color="text-[#059669]" />
-        <StatCard value={stats.high + stats.medium} label="Good Matches" color="text-[#2563eb]" />
-        <StatCard value={stats.none} label="No Match" color="text-muted-foreground" />
-        <StatCard value={formatCurrency(stats.totalSavings)} label="Potential Savings" color="text-primary" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+        <StatCard value={stats.perfect} label="Perfect Matches" icon={<Sparkles className="h-4 w-4" />} color="text-[#34d399]" />
+        <StatCard value={stats.high + stats.medium} label="Good Matches" icon={<CheckCircle className="h-4 w-4" />} color="text-[#60a5fa]" />
+        <StatCard value={stats.none} label="No Match" icon={<AlertTriangle className="h-4 w-4" />} color="text-muted-foreground" />
+        <StatCard value={formatCurrency(stats.totalSavings)} label="Total Potential Savings" icon={<Crown className="h-4 w-4" />} color="text-primary" />
       </div>
 
       {/* Sort */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground font-medium">Sort:</span>
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sort matches:</span>
         {([
           { key: 'savings' as const, label: 'Best Deals' },
           { key: 'match' as const, label: 'Best Match' },
@@ -326,11 +326,10 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
           <button
             key={key}
             onClick={() => setSortBy(key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              sortBy === key
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-secondary text-secondary-foreground hover:text-foreground border border-border'
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${sortBy === key
+              ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(129,140,248,0.3)]'
+              : 'glass text-muted-foreground hover:text-foreground hover:bg-white/5 border border-border/50'
+              }`}
           >
             {label}
           </button>
@@ -346,16 +345,19 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
           return (
             <div
               key={index}
-              className={`bg-card border rounded-xl overflow-hidden card-hover transition-all ${
-                match.matchType === 'perfect' ? 'border-[#059669]/30' :
-                match.matchType === 'high' ? 'border-[#2563eb]/30' :
-                match.matchType === 'medium' ? 'border-primary/30' :
-                'border-border'
-              }`}
+              className={`glass rounded-2xl overflow-hidden card-hover transition-all duration-300 border ${match.matchType === 'perfect' ? 'border-[#34d399]/40 shadow-[0_0_20px_rgba(52,211,153,0.1)]' :
+                match.matchType === 'high' ? 'border-[#60a5fa]/40 shadow-[0_0_20px_rgba(96,165,250,0.1)]' :
+                  match.matchType === 'medium' ? 'border-primary/40' :
+                    'border-border/40'
+                }`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="p-5">
+              <div className="p-6">
                 {/* Two-column card layout */}
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-8 md:gap-12 relative">
+                  {/* Divider line for desktop */}
+                  <div className="hidden md:block absolute left-1/2 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-border to-transparent -translate-x-1/2" />
+
                   {/* TCGPlayer side */}
                   {match.tcgCard && (
                     <CardSide
@@ -363,7 +365,7 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
                       name={match.tcgCard.name}
                       imageUrl={match.tcgCard.imageUrl}
                       code={match.tcgCard.extendedData?.find(d => d.name === 'Number')?.value || 'No Code'}
-                      setName={match.tcgCard.setName}
+                      setName={(match.tcgCard as any).groupName}
                       price={match.tcgCard.price?.marketPrice != null ? `$${match.tcgCard.price.marketPrice.toFixed(2)}` : 'N/A'}
                       url={match.tcgCard.url}
                       isBest={match.bestPrice === "tcg"}
@@ -388,53 +390,51 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
                 </div>
 
                 {/* Match info footer */}
-                <div className={`mt-5 p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                  match.matchType === 'perfect' ? 'bg-[#059669]/5 border border-[#059669]/15' :
-                  match.matchType === 'high' ? 'bg-[#2563eb]/5 border border-[#2563eb]/15' :
-                  match.matchType === 'medium' ? 'bg-primary/5 border border-primary/15' :
-                  'bg-secondary border border-border'
-                }`}>
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className={`mt-6 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 backdrop-blur-md ${match.matchType === 'perfect' ? 'bg-[#34d399]/5 border border-[#34d399]/20' :
+                  match.matchType === 'high' ? 'bg-[#60a5fa]/5 border border-[#60a5fa]/20' :
+                    match.matchType === 'medium' ? 'bg-primary/5 border border-primary/20' :
+                      'bg-white/5 border border-white/10'
+                  }`}>
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     {match.matchType === "perfect" && (
-                      <Badge className="bg-[#059669]/10 text-[#059669] border border-[#059669]/20 text-[11px] font-semibold">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Perfect ({match.confidenceScore}%)
+                      <Badge className="bg-[#34d399]/10 text-[#34d399] border-none text-[12px] font-bold px-2.5 py-1">
+                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                        Perfect Match ({match.confidenceScore}%)
                       </Badge>
                     )}
                     {match.matchType === "high" && (
-                      <Badge className="bg-[#2563eb]/10 text-[#2563eb] border border-[#2563eb]/20 text-[11px] font-semibold">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Good ({match.confidenceScore}%)
+                      <Badge className="bg-[#60a5fa]/10 text-[#60a5fa] border-none text-[12px] font-bold px-2.5 py-1">
+                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                        Solid Match ({match.confidenceScore}%)
                       </Badge>
                     )}
                     {match.matchType === "medium" && (
-                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        Medium ({match.confidenceScore}%)
+                      <Badge className="bg-primary/10 text-primary border-none text-[12px] font-bold px-2.5 py-1">
+                        <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+                        Partial Match ({match.confidenceScore}%)
                       </Badge>
                     )}
                     {match.matchType === "none" && (
-                      <Badge variant="outline" className="text-[11px] text-muted-foreground font-semibold">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        No Match
+                      <Badge className="bg-muted border-none text-[12px] text-muted-foreground font-bold px-2.5 py-1">
+                        <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+                        No Match Found
                       </Badge>
                     )}
 
                     {/* Reasons as small inline text */}
                     {match.matchReasons.length > 0 && match.matchType !== 'none' && (
-                      <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                      <span className="text-[11px] text-muted-foreground/80 font-medium hidden sm:inline ml-2">
                         {match.matchReasons[0]}
                       </span>
                     )}
                   </div>
 
                   {match.savings && match.savings > 0 && (
-                    <Badge className={`text-[11px] font-semibold gap-1 ${
-                      match.bestPrice === "tcg"
-                        ? 'bg-[#2563eb]/10 text-[#2563eb] border border-[#2563eb]/20'
-                        : 'bg-[#059669]/10 text-[#059669] border border-[#059669]/20'
-                    }`}>
-                      <Crown className="w-3 h-3" />
+                    <Badge className={`text-xs font-bold gap-1.5 px-3 py-1 scale-105 origin-right border-none ${match.bestPrice === "tcg"
+                      ? 'bg-[#60a5fa]/15 text-[#60a5fa] shadow-[0_0_10px_rgba(96,165,250,0.2)]'
+                      : 'bg-[#34d399]/15 text-[#34d399] shadow-[0_0_10px_rgba(52,211,153,0.2)]'
+                      }`}>
+                      <Crown className="w-3.5 h-3.5" />
                       Save {formatCurrency(match.savings)} on {match.bestPrice === "tcg" ? "TCGPlayer" : "Liga"}
                     </Badge>
                   )}
@@ -449,11 +449,16 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
 }
 
 
-function StatCard({ value, label, color }: { value: string | number; label: string; color: string }) {
+function StatCard({ value, label, icon, color }: { value: string | number; label: string; icon: React.ReactNode; color: string }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 text-center">
-      <div className={`text-2xl font-bold font-mono ${color}`}>{value}</div>
-      <div className="text-[11px] text-muted-foreground font-medium mt-1.5 uppercase tracking-wider">{label}</div>
+    <div className="glass border border-border/50 rounded-2xl p-5 flex items-start justify-between relative overflow-hidden group">
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 group-hover:opacity-20 transition-all duration-500">
+        <div className={`w-12 h-12 ${color}`}>{icon}</div>
+      </div>
+      <div className="relative z-10">
+        <div className={`text-3xl font-extrabold font-mono tracking-tight drop-shadow-sm ${color}`}>{value}</div>
+        <div className="text-[11px] text-muted-foreground font-bold mt-2 uppercase tracking-widest">{label}</div>
+      </div>
     </div>
   )
 }
@@ -482,63 +487,65 @@ function CardSide({
   isBest: boolean
 }) {
   return (
-    <div className="flex gap-4">
+    <div className={`flex gap-5 group rounded-xl p-2 transition-all ${isBest ? 'bg-primary/5 -m-2' : ''}`}>
       {/* Thumbnail */}
-      <div className="w-[72px] h-[100px] rounded-lg overflow-hidden bg-secondary flex-shrink-0 border border-border">
+      <div className="w-[84px] h-[116px] rounded-xl overflow-hidden bg-secondary/30 flex-shrink-0 border border-border/50 shadow-sm relative">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:scale-[1.05]"
             onError={(e) => { e.currentTarget.src = '/placeholder.svg' }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+          <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground font-medium border border-dashed border-border/50">
             No img
           </div>
         )}
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${platform === 'tcg' ? 'platform-tcg' : 'platform-liga'}`}>
+      <div className="flex-1 min-w-0 flex flex-col pt-1">
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${platform === 'tcg' ? 'platform-tcg' : 'platform-liga'}`}>
             {platform === 'tcg' ? 'TCGPlayer' : 'Liga One Piece'}
           </span>
-          <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-0.5">
-            <Hash className="w-2.5 h-2.5" />{code}
+          <span className="text-[11px] text-muted-foreground font-mono font-medium flex items-center gap-0.5 bg-secondary/30 px-1.5 rounded-md">
+            <Hash className="w-3 h-3 text-muted-foreground/70" />{code}
           </span>
         </div>
 
-        <h4 className="font-semibold text-sm text-foreground line-clamp-2 leading-snug">{name}</h4>
+        <h4 className="font-bold text-[15px] text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">{name}</h4>
 
-        <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+        <div className="text-xs text-muted-foreground/80 mt-1.5 flex flex-wrap gap-x-4 gap-y-1 font-medium">
           {setName && (
-            <span className="flex items-center gap-1">
-              <Package className="w-3 h-3" />{setName}
+            <span className="flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 text-muted-foreground/60" />{setName}
             </span>
           )}
           {variation && (
-            <span className="flex items-center gap-1 text-primary">
-              <Sparkles className="w-3 h-3" />{variation}
+            <span className="flex items-center gap-1.5 text-primary drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]">
+              <Sparkles className="w-3.5 h-3.5" />{variation}
             </span>
           )}
         </div>
 
-        <div className="mt-auto pt-2 flex items-end justify-between">
+        <div className="mt-auto pt-3 flex items-end justify-between border-t border-border/20">
           <div>
-            <div className="text-base font-bold text-foreground font-mono leading-none">{price}</div>
+            <div className={`text-xl font-extrabold font-mono leading-none tracking-tight ${isBest ? 'text-primary drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]' : 'text-foreground'}`}>
+              {price}
+            </div>
             {priceSecondary && (
-              <div className="text-[11px] text-muted-foreground font-mono mt-0.5">{'≈'} {priceSecondary}</div>
+              <div className="text-[12px] text-muted-foreground/70 font-mono font-medium mt-1">{'≈'} {priceSecondary}</div>
             )}
           </div>
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-primary transition-colors bg-white/5 hover:bg-white/10 px-2 py-1.5 rounded-lg"
           >
-            View <ExternalLink className="w-3 h-3" />
+            Visit <ExternalLink className="w-3 h-3" />
           </a>
         </div>
       </div>
