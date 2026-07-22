@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio"
 
-const SCRAPER_API_KEY = "d9ae58b0d53de2809c283d035321f3c9"
+const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY || ""
 
 export interface LigaCard {
   name: string
@@ -25,6 +25,10 @@ export class LigaOnePieceScraper {
 
   async searchCards(query: string): Promise<LigaCard[]> {
     console.log(`🔍 Buscando: "${query}" via ScraperAPI`)
+    if (!SCRAPER_API_KEY) {
+      console.warn("SCRAPER_API_KEY is not configured")
+      return []
+    }
     const targetUrl = `https://www.ligaonepiece.com.br/?view=cards%2Fsearch&card=${encodeURIComponent(query)}&tipo=1`
 
     // We add render=true because Liga One Piece uses JS to display card prices & results

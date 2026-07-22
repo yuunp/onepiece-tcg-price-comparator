@@ -8,6 +8,7 @@ node_modules/
 out/
 build/
 dist/
+next-env.d.ts
 
 # Environment variables
 .env
@@ -15,6 +16,7 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env*.backup
 
 # Logs
 npm-debug.log*
@@ -25,6 +27,8 @@ yarn-error.log*
 test-results/
 playwright-report/
 playwright/.cache/
+.liga-chrome-profile/
+liga_res.html
 
 # IDE
 .vscode/

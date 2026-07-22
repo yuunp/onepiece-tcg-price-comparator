@@ -1,7 +1,10 @@
 const fs = require('fs');
 
 async function main() {
-    const API_KEY = 'd9ae58b0d53de2809c283d035321f3c9';
+    const API_KEY = process.env.SCRAPER_API_KEY;
+    if (!API_KEY) {
+        throw new Error('SCRAPER_API_KEY is not configured');
+    }
     const url = encodeURIComponent('https://www.ligaonepiece.com.br/?view=cards%2Fsearch&card=luffy&tipo=1');
     const scraperApiUrl = `http://api.scraperapi.com?api_key=${API_KEY}&url=${url}&render=true&country_code=br&premium=true`;
 
