@@ -48,7 +48,13 @@ export async function GET(request: NextRequest) {
     const onePieceCategoryId = 68
 
     console.log("[v0] Fetching groups for One Piece category:", onePieceCategoryId)
-    const groupsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${onePieceCategoryId}/groups`)
+    const tcgCsvHeaders = {
+      "User-Agent": "BountyDex/1.0 (+https://bountydex.yunp.fun)",
+      Accept: "application/json",
+    }
+    const groupsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${onePieceCategoryId}/groups`, {
+      headers: tcgCsvHeaders,
+    })
 
     if (!groupsResponse.ok) {
       throw new Error(`Groups API returned ${groupsResponse.status}`)
@@ -69,6 +75,7 @@ export async function GET(request: NextRequest) {
         console.log(`[v0] 🔍 Searching in: "${group.name}" (ID: ${group.groupId})`)
         const productsResponse = await fetch(
           `https://tcgcsv.com/tcgplayer/${onePieceCategoryId}/${group.groupId}/products`,
+          { headers: tcgCsvHeaders },
         )
 
         if (!productsResponse.ok) {
@@ -101,6 +108,7 @@ export async function GET(request: NextRequest) {
           try {
             const pricesResponse = await fetch(
               `https://tcgcsv.com/tcgplayer/${onePieceCategoryId}/${group.groupId}/prices`,
+              { headers: tcgCsvHeaders },
             )
 
             let prices: MarketPrice[] = []

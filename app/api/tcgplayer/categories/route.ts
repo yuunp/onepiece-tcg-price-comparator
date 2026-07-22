@@ -4,7 +4,8 @@ export async function GET() {
   try {
     const response = await fetch("https://tcgcsv.com/categories.json", {
       headers: {
-        "User-Agent": "OnePieceComparator/1.0",
+        "User-Agent": "BountyDex/1.0 (+https://bountydex.yunp.fun)",
+        Accept: "application/json",
       },
     })
 
