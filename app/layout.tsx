@@ -6,8 +6,8 @@ const inter = Inter({ subsets: ['latin'] })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
 
 export const metadata: Metadata = {
-  title: 'One Piece Compare - Card Price Comparison',
-  description: 'Compare One Piece TCG card prices across TCGPlayer and Liga One Piece. Find the best deals instantly.',
+  title: 'BountyDex - One Piece TCG Price Comparison',
+  description: 'Compare One Piece TCG card prices across TCGPlayer and Liga One Piece to spot the best deals fast.',
 }
 
 export const viewport: Viewport = {
