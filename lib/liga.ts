@@ -5,7 +5,7 @@ export interface LigaCard {
   price: number
   numericCode: string
   currency: string
-  priceUSD?: number // Added USD converted price
+  priceUSD?: number
   imageUrl?: string
   url: string
   rarity?: string
@@ -18,7 +18,9 @@ export interface LigaSearchResponse {
   source: string
   results: LigaCard[]
   totalFound: number
-  exchangeRate?: number // Added exchange rate info
+  exchangeRate?: number
+  available: boolean
+  warning?: string
 }
 
 export async function searchLigaOnePiece(query: string): Promise<LigaSearchResponse> {
@@ -28,22 +30,18 @@ export async function searchLigaOnePiece(query: string): Promise<LigaSearchRespo
     throw new Error("Failed to search Liga One Piece")
   }
 
-  const data = await response.json()
+  const data: LigaSearchResponse = await response.json()
 
   if (data.results && data.results.length > 0) {
-    try {
-      const conversion = await convertCurrency(1, "BRL", "USD")
-      const exchangeRate = conversion.rate
+    const conversion = await convertCurrency(1, "BRL", "USD")
+    const exchangeRate = conversion.rate
 
-      data.results = data.results.map((card: LigaCard) => ({
-        ...card,
-        priceUSD: card.price > 0 ? card.price * exchangeRate : undefined,
-      }))
+    data.results = data.results.map((card: LigaCard) => ({
+      ...card,
+      priceUSD: card.price > 0 ? card.price * exchangeRate : undefined,
+    }))
 
-      data.exchangeRate = exchangeRate
-    } catch (error) {
-      console.error("Error converting Liga prices to USD:", error)
-    }
+    data.exchangeRate = exchangeRate
   }
 
   return data

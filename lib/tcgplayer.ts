@@ -5,6 +5,9 @@ export interface TCGPlayerCard {
   imageUrl: string
   categoryId: number
   groupId: number
+  groupName?: string
+  setName?: string
+  setCode?: string
   url: string
   price?: {
     productId: number

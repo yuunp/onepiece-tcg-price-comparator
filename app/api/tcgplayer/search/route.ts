@@ -16,6 +16,8 @@ interface Product {
   }>
   setName?: string
   setCode?: string
+  groupName?: string
+  price?: MarketPrice
 }
 
 interface MarketPrice {
@@ -32,148 +34,133 @@ interface TCGGroup {
   groupId: number
   name: string
   abbreviation?: string
-  publishedOn?: string
-  modifiedOn?: string
+}
+
+const ONE_PIECE_CATEGORY_ID = 68
+const REQUEST_HEADERS = {
+  "User-Agent": "BountyDex/1.0 (+https://bountydex.yunp.fun)",
+  Accept: "application/json",
+}
+const MAX_RESULTS = 100
+const SEARCHABLE_GROUP_LIMIT = 30
+const GROUP_PRIORITY_KEYWORDS = ["starter deck", "promo", "premium booster", "extra booster", "release event", "anniversary", "ultra deck"]
+
+function buildSearchTerms(query: string): string[] {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((term) => term.trim())
+    .filter((term) => term.length > 1)
+}
+
+function scoreGroup(group: TCGGroup, query: string): number {
+  const name = group.name.toLowerCase()
+  const queryLower = query.toLowerCase()
+  let score = 0
+
+  if (name.includes(queryLower)) score += 50
+  for (const keyword of GROUP_PRIORITY_KEYWORDS) {
+    if (name.includes(keyword)) score += 10
+  }
+
+  return score
+}
+
+function matchesProduct(product: Product, query: string, searchTerms: string[]): boolean {
+  const productName = product.name.toLowerCase()
+  const cleanName = product.cleanName.toLowerCase()
+  if (productName.includes(query) || cleanName.includes(query)) return true
+  return searchTerms.some((term) => productName.includes(term) || cleanName.includes(term))
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    headers: REQUEST_HEADERS,
+    next: { revalidate: 300 },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Fetch failed for ${url}: ${response.status}`)
+  }
+
+  return response.json()
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get("q")
+  const query = searchParams.get("q")?.trim()
 
   if (!query) {
     return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
   }
 
   try {
-    const onePieceCategoryId = 68
+    const groupsData = await fetchJson<{ results?: TCGGroup[] } | TCGGroup[]>(`https://tcgcsv.com/tcgplayer/${ONE_PIECE_CATEGORY_ID}/groups`)
+    const groups = Array.isArray(groupsData) ? groupsData : groupsData.results || []
+    const rankedGroups = groups
+      .map((group) => ({ group, score: scoreGroup(group, query) }))
+      .sort((left, right) => right.score - left.score)
+      .slice(0, SEARCHABLE_GROUP_LIMIT)
+      .map(({ group }) => group)
 
-    console.log("[v0] Fetching groups for One Piece category:", onePieceCategoryId)
-    const tcgCsvHeaders = {
-      "User-Agent": "BountyDex/1.0 (+https://bountydex.yunp.fun)",
-      Accept: "application/json",
-    }
-    const groupsResponse = await fetch(`https://tcgcsv.com/tcgplayer/${onePieceCategoryId}/groups`, {
-      headers: tcgCsvHeaders,
-    })
+    const normalizedQuery = query.toLowerCase()
+    const searchTerms = buildSearchTerms(query)
 
-    if (!groupsResponse.ok) {
-      throw new Error(`Groups API returned ${groupsResponse.status}`)
-    }
+    const allResults = await Promise.all(
+      rankedGroups.map(async (group) => {
+        try {
+          const productsData = await fetchJson<{ results?: Product[] } | Product[]>(
+            `https://tcgcsv.com/tcgplayer/${ONE_PIECE_CATEGORY_ID}/${group.groupId}/products`,
+          )
+          const products = Array.isArray(productsData) ? productsData : productsData.results || []
+          const matchingProducts = products.filter((product) => matchesProduct(product, normalizedQuery, searchTerms))
 
-    const groupsData = await groupsResponse.json()
-    const groups: TCGGroup[] = groupsData.results || groupsData
+          if (matchingProducts.length === 0) {
+            return []
+          }
 
-    if (!Array.isArray(groups)) {
-      console.error("[v0] Groups is not an array:", typeof groups, groups)
-      throw new Error("Groups response is not an array")
-    }
+          const pricesData = await fetchJson<{ results?: MarketPrice[] } | MarketPrice[]>(
+            `https://tcgcsv.com/tcgplayer/${ONE_PIECE_CATEGORY_ID}/${group.groupId}/prices`,
+          ).catch(() => [])
 
-    const searchResults: Array<Product & { price?: MarketPrice }> = []
+          const prices = Array.isArray(pricesData) ? pricesData : pricesData.results || []
 
-    const groupPromises = groups.map(async (group) => {
-      try {
-        console.log(`[v0] 🔍 Searching in: "${group.name}" (ID: ${group.groupId})`)
-        const productsResponse = await fetch(
-          `https://tcgcsv.com/tcgplayer/${onePieceCategoryId}/${group.groupId}/products`,
-          { headers: tcgCsvHeaders },
-        )
+          return matchingProducts.map((product) => {
+            const price = prices.find((entry) => entry.productId === product.productId)
+            const setCode = extractSetCodeFromExtendedData(product.extendedData)
 
-        if (!productsResponse.ok) {
-          console.warn(`❌ Products API returned ${productsResponse.status} for group ${group.groupId}`)
+            return {
+              ...product,
+              groupName: group.name,
+              setName: group.name,
+              setCode: setCode || group.abbreviation || extractSetCodeFromSetName(group.name),
+              price,
+            }
+          })
+        } catch (error) {
+          console.error(`TCG group search failed for ${group.groupId}:`, error)
           return []
         }
+      }),
+    )
 
-        const productsData = await productsResponse.json()
-        const products: Product[] = productsData.results || productsData
-
-        const searchTerms = query
-          .toLowerCase()
-          .split(" ")
-          .filter((term) => term.length > 1)
-        
-        const matchingProducts = products.filter((product) => {
-          const productName = product.name.toLowerCase()
-          const cleanName = product.cleanName.toLowerCase()
-
-          if (productName.includes(query.toLowerCase()) || cleanName.includes(query.toLowerCase())) {
-            return true
-          }
-
-          return searchTerms.some((term) => productName.includes(term) || cleanName.includes(term))
-        })
-
-        if (matchingProducts.length > 0) {
-          console.log(`✅ Found ${matchingProducts.length} matches in "${group.name}"`)
-          
-          try {
-            const pricesResponse = await fetch(
-              `https://tcgcsv.com/tcgplayer/${onePieceCategoryId}/${group.groupId}/prices`,
-              { headers: tcgCsvHeaders },
-            )
-
-            let prices: MarketPrice[] = []
-            if (pricesResponse.ok) {
-              const pricesData = await pricesResponse.json()
-              prices = pricesData.results || pricesData
-            }
-
-            return matchingProducts.map((product) => {
-              const price = prices.find((p) => p.productId === product.productId)
-              
-              // 🎯 EXTRAIR CÓDIGO DO SET DIRETO DO EXTENDEDDATA
-              const setCode = extractSetCodeFromExtendedData(product.extendedData)
-              
-              return { 
-                ...product, 
-                price,
-                setName: group.name,
-                setCode: setCode || group.abbreviation || extractSetCodeFromSetName(group.name)
-              }
-            })
-          } catch (priceError) {
-            console.error(`❌ Error fetching prices for group ${group.groupId}:`, priceError)
-            return matchingProducts.map((product) => {
-              const setCode = extractSetCodeFromExtendedData(product.extendedData)
-              
-              return {
-                ...product,
-                setName: group.name,
-                setCode: setCode || group.abbreviation || extractSetCodeFromSetName(group.name)
-              }
-            })
-          }
-        }
-        return []
-      } catch (groupError) {
-        console.error(`❌ Error fetching products for group ${group.groupId}:`, groupError)
-        return []
-      }
-    })
-
-    const allResults = await Promise.all(groupPromises)
-    const flatResults = allResults.flat()
-
-    console.log(`[v0] 📊 FINAL RESULTS: ${flatResults.length} total matches`)
-    
-    // 🔍 DEBUG: Mostrar amostra dos resultados finais
-    if (flatResults.length > 0) {
-      console.log("[v0] 📋 Sample results with set info:")
-      flatResults.slice(0, 5).forEach((result, index) => {
-        console.log(`${index + 1}. "${result.name}"`)
-        console.log(`   → Set: "${result.setName}" | Code: "${result.setCode}"`)
-        console.log(`   → Price: $${result.price?.marketPrice || 'N/A'}`)
-        console.log('   ---')
+    const flatResults = allResults
+      .flat()
+      .sort((left, right) => {
+        const leftPrice = left.price?.marketPrice ?? Number.POSITIVE_INFINITY
+        const rightPrice = right.price?.marketPrice ?? Number.POSITIVE_INFINITY
+        return leftPrice - rightPrice
       })
-    }
 
     return NextResponse.json({
       query,
-      categoryId: onePieceCategoryId,
-      results: flatResults.slice(0, 100),
+      categoryId: ONE_PIECE_CATEGORY_ID,
+      results: flatResults.slice(0, MAX_RESULTS),
       totalFound: flatResults.length,
+      searchedGroups: rankedGroups.length,
     })
   } catch (error) {
-    console.error("❌ Error searching TCGPlayer:", error)
+    console.error("TCG search route error:", error)
     return NextResponse.json(
       {
         error: "Failed to search TCGPlayer",
@@ -184,27 +171,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 🎯 FUNÇÃO CORRETA para extrair código do set do extendedData
-function extractSetCodeFromExtendedData(extendedData?: Array<{name: string; value: string}>): string | null {
+function extractSetCodeFromExtendedData(extendedData?: Array<{ name: string; value: string }>): string | null {
   if (!extendedData) return null
 
-  // Procurar pelo campo "Number" que contém o código completo (ex: "OP06-054")
-  const numberField = extendedData.find(data => 
-    data.name.toLowerCase() === 'number'
-  )
+  const numberField = extendedData.find((data) => data.name.toLowerCase() === "number")
+  if (!numberField?.value) return null
 
-  if (numberField && numberField.value) {
-    // Extrair o código do set (parte antes do hífen)
-    const setCodeMatch = numberField.value.match(/^([A-Z0-9]+)-\d+/)
-    if (setCodeMatch && setCodeMatch[1]) {
-      return setCodeMatch[1]
-    }
-  }
-
-  return null
+  const setCodeMatch = numberField.value.match(/^([A-Z0-9]+)-\d+/)
+  return setCodeMatch?.[1] || null
 }
 
-// 🔧 FUNÇÃO para extrair código do nome do set (fallback)
 function extractSetCodeFromSetName(setName: string): string {
   const setMappings: Record<string, string> = {
     "romance dawn": "OP01",
@@ -213,36 +189,18 @@ function extractSetCodeFromSetName(setName: string): string {
     "kingdoms of intrigue": "OP04",
     "awakening of the new era": "OP05",
     "wings of the captain": "OP06",
-    "wings of captain": "OP06",
     "500 years in the future": "OP07",
     "two legends": "OP08",
-    
     "starter deck": "ST01",
-    "starter deck luffy": "ST01",
-    "starter deck ace": "ST02",
-    "starter deck nami": "ST03",
-    "starter deck kaido": "ST04",
-    "starter deck uta": "ST05",
-    "starter deck absolute justice": "ST06",
-    "starter deck big mom": "ST07",
-    "starter deck monkey d luffy": "ST08",
-    "starter deck yamato": "ST09",
-    "starter deck issho": "ST10",
-    "starter deck zoro and sanji": "ST12",
-    
-    "memorial collection": "EB01",
-    "extra booster": "EB01",
-    "promotional": "P",
-    "promo": "P",
-    "pre-release": "PR01",
-    "championship": "CH01"
+    memorial: "EB01",
+    promotional: "P",
+    promo: "P",
+    championship: "CH01",
   }
 
   const lowerSetName = setName.toLowerCase()
   for (const [name, code] of Object.entries(setMappings)) {
-    if (lowerSetName.includes(name)) {
-      return code
-    }
+    if (lowerSetName.includes(name)) return code
   }
 
   return "UNK"

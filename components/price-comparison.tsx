@@ -1,34 +1,19 @@
 "use client"
 
-import React from "react"
-import { ExternalLink, CheckCircle, AlertTriangle, Hash, Package, Sparkles, ArrowUpDown, Crown, TrendingDown, TrendingUp } from "lucide-react"
+import React, { useMemo } from "react"
+import {
+  AlertTriangle,
+  CheckCircle,
+  Crown,
+  ExternalLink,
+  Hash,
+  Package,
+  Sparkles,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import type { TCGPlayerCard } from "@/lib/tcgplayer"
 import type { LigaCard } from "@/lib/liga"
-import { useMemo } from "react"
-
-type BestPrice = "tcg" | "liga" | "tie"
-type MatchType = "perfect" | "high" | "medium" | "none"
-
-interface CardVariation {
-  code: string
-  name: string
-  description: string
-  rarity?: string
-  emoji: string
-}
-
-interface CardMatch {
-  tcgCard?: TCGPlayerCard
-  ligaCard?: LigaCard
-  similarity: number
-  bestPrice: BestPrice
-  savings?: number
-  matchType: MatchType
-  matchMethod?: string
-  confidenceScore: number
-  matchReasons: string[]
-}
+import type { TCGPlayerCard } from "@/lib/tcgplayer"
+import { identifyVariation, matchCards, type CardMatch } from "@/lib/comparison"
 
 interface PriceComparisonProps {
   tcgResults: TCGPlayerCard[]
@@ -36,217 +21,8 @@ interface PriceComparisonProps {
   exchangeRate?: number
 }
 
-const identifyVariation = (numericCode: string): CardVariation => {
-  const variations: { [key: string]: CardVariation } = {
-    'E': { code: 'E', name: 'Special', description: 'Edição especial', rarity: 'Special', emoji: '⭐' },
-    'AA': { code: 'AA', name: 'Alternate Art', description: 'Arte alternativa', rarity: 'Super Rare', emoji: '🎨' },
-    'RE': { code: 'RE', name: 'Reprint', description: 'Reimpressão', rarity: 'Common', emoji: '🔄' },
-    'FA': { code: 'FA', name: 'Full Art', description: 'Arte completa', rarity: 'Rare', emoji: '🖼️' },
-    'AS': { code: 'AS', name: 'Anniversary Set', description: 'Edição de aniversário', rarity: 'Secret Rare', emoji: '🎂' },
-    'BS': { code: 'BS', name: 'Best Selection', description: 'Seleção especial', rarity: 'Super Rare', emoji: '🏆' },
-    'CH': { code: 'CH', name: 'Championship', description: 'Edição de campeonato', rarity: 'Promo', emoji: '🥇' },
-    'PR': { code: 'PR', name: 'Promo', description: 'Cartão promocional', rarity: 'Promo', emoji: '🎁' },
-    'SP': { code: 'SP', name: 'Special', description: 'Edição especial', rarity: 'Special', emoji: '✨' },
-    'SR': { code: 'SR', name: 'Super Rare', description: 'Super rara', rarity: 'Super Rare', emoji: '💎' }
-  }
-
-  const suffix = numericCode.split('-').pop()?.replace(/^\d+/, '') || ''
-
-  return variations[suffix] || {
-    code: suffix,
-    name: 'Standard',
-    description: 'Versão padrão',
-    rarity: 'Normal',
-    emoji: '📄'
-  }
-}
-
-const extractCardNumber = (name: string): string | null => {
-  if (!name) return null
-  const patterns = [
-    /(OP\d{2}-\d{3}[A-Z]*)/i,
-    /(ST\d{2}-\d{3}[A-Z]*)/i,
-    /(EB\d{2}-\d{3}[A-Z]*)/i,
-    /(PRB\d{2}-\d{3}[A-Z]*)/i,
-    /(P-\d{3}[A-Z]*)/i,
-    /([A-Z]{2,4}\d{1,2}-\d{3}[A-Z]*)/i
-  ]
-
-  for (const pattern of patterns) {
-    const match = name.match(pattern)
-    if (match) return match[1].toUpperCase()
-  }
-
-  return null
-}
-
-const normalizeName = (name: string): string => {
-  if (!name) return ''
-
-  let cleaned = name.replace(/(OP\d{2}-\d{3}[A-Z]*)/gi, '')
-    .replace(/(ST\d{2}-\d{3}[A-Z]*)/gi, '')
-    .replace(/(EB\d{2}-\d{3}[A-Z]*)/gi, '')
-    .replace(/(P-\d{3}[A-Z]*)/gi, '')
-    .replace(/([A-Z]{2,4}\d{1,2}-\d{3}[A-Z]*)/gi, '')
-
-  cleaned = cleaned.replace(/\s+/g, ' ')
-    .replace(/[\(\]\[]/g, '')
-    .trim()
-    .toLowerCase()
-
-  return cleaned
-}
-
-const normalizeCode = (code: string): string => {
-  if (!code) return ''
-  return code.replace(/[-_][A-Z]{1,3}$/, '')
-}
-
-const calculateSimilarity = (tcgCard: TCGPlayerCard, ligaCard: LigaCard): {
-  score: number
-  reasons: string[]
-  method: string
-} => {
-  const reasons: string[] = []
-  let totalScore = 0
-
-  const tcgSetName = (tcgCard as any).groupName?.toLowerCase().trim()
-  const ligaSetName = ligaCard.set?.toLowerCase().trim()
-
-  if (tcgSetName && ligaSetName && tcgSetName === ligaSetName) {
-    totalScore += 30
-    reasons.push(`Same set: "${tcgSetName}" (30%)`)
-  }
-
-  const tcgNameNormalized = normalizeName(tcgCard.name)
-  const ligaNameNormalized = normalizeName(ligaCard.name)
-
-  if (tcgNameNormalized && ligaNameNormalized) {
-    if (tcgNameNormalized === ligaNameNormalized) {
-      totalScore += 40
-      reasons.push(`Identical name: "${tcgNameNormalized}" (40%)`)
-    } else if (tcgNameNormalized.includes(ligaNameNormalized) ||
-      ligaNameNormalized.includes(tcgNameNormalized)) {
-      totalScore += 0
-      reasons.push(`Names similar: "${tcgNameNormalized}" ~ "${ligaNameNormalized}" (25%)`)
-    }
-  }
-
-  const tcgCode = tcgCard.extendedData?.find(d => d.name === 'Number')?.value || extractCardNumber(tcgCard.name)
-  const ligaCode = ligaCard.numericCode
-
-  if (tcgCode && ligaCode) {
-    const tcgBase = normalizeCode(tcgCode)
-    const ligaBase = normalizeCode(ligaCode)
-
-    if (tcgBase === ligaBase) {
-      totalScore += 30
-      reasons.push(`Base code: ${tcgBase} (30%)`)
-    } else {
-      const tcgSetFromCode = tcgCode.split('-')[0]
-      const ligaSetFromCode = ligaCode.split('-')[0]
-      if (tcgSetFromCode === ligaSetFromCode) {
-        totalScore += 15
-        reasons.push(`Same set in code: ${tcgSetFromCode} (15%)`)
-      }
-    }
-  }
-
-  const finalScore = Math.min(totalScore / 100, 1)
-
-  let method = 'Basic Matching'
-  if (finalScore >= 0.9) method = 'Perfect Match'
-  else if (finalScore >= 0.7) method = 'Good Match'
-  else if (finalScore >= 0.5) method = 'Partial Match'
-
-  return { score: finalScore, reasons, method }
-}
-
-const matchCards = (tcgCards: TCGPlayerCard[], ligaCards: LigaCard[]): CardMatch[] => {
-  const matches: CardMatch[] = []
-  const usedLigaIndices = new Set<number>()
-  const usedTcgIndices = new Set<number>()
-
-  tcgCards.forEach((tcgCard, tcgIndex) => {
-    let bestMatch = { index: -1, score: 0, analysis: { score: 0, reasons: [] as string[], method: '' } }
-    ligaCards.forEach((ligaCard, ligaIndex) => {
-      if (usedLigaIndices.has(ligaIndex)) return
-      const analysis = calculateSimilarity(tcgCard, ligaCard)
-      if (analysis.score > bestMatch.score && analysis.score >= 0.8) {
-        bestMatch = { index: ligaIndex, score: analysis.score, analysis }
-      }
-    })
-    if (bestMatch.index !== -1) {
-      usedLigaIndices.add(bestMatch.index)
-      usedTcgIndices.add(tcgIndex)
-      matches.push(createCardMatch(tcgCard, ligaCards[bestMatch.index], bestMatch.analysis))
-    }
-  })
-
-  tcgCards.forEach((tcgCard, tcgIndex) => {
-    if (usedTcgIndices.has(tcgIndex)) return
-    let bestMatch = { index: -1, score: 0, analysis: { score: 0, reasons: [] as string[], method: '' } }
-    ligaCards.forEach((ligaCard, ligaIndex) => {
-      if (usedLigaIndices.has(ligaIndex)) return
-      const analysis = calculateSimilarity(tcgCard, ligaCard)
-      if (analysis.score > bestMatch.score && analysis.score >= 0.6) {
-        bestMatch = { index: ligaIndex, score: analysis.score, analysis }
-      }
-    })
-    if (bestMatch.index !== -1) {
-      usedLigaIndices.add(bestMatch.index)
-      usedTcgIndices.add(tcgIndex)
-      matches.push(createCardMatch(tcgCard, ligaCards[bestMatch.index], bestMatch.analysis))
-    }
-  })
-
-  tcgCards.forEach((card, index) => {
-    if (!usedTcgIndices.has(index)) {
-      matches.push({
-        tcgCard: card, similarity: 0, bestPrice: "tcg", matchType: "none",
-        matchMethod: 'No match found', confidenceScore: 0, matchReasons: ['No match found']
-      })
-    }
-  })
-
-  ligaCards.forEach((card, index) => {
-    if (!usedLigaIndices.has(index)) {
-      matches.push({
-        ligaCard: card, similarity: 0, bestPrice: "liga", matchType: "none",
-        matchMethod: 'No match found', confidenceScore: 0, matchReasons: ['No match found']
-      })
-    }
-  })
-
-  return matches
-}
-
-const createCardMatch = (tcgCard: TCGPlayerCard, ligaCard: LigaCard, analysis: {
-  score: number; reasons: string[]; method: string
-}): CardMatch => {
-  const tcgPrice = tcgCard.price?.marketPrice || 0
-  const ligaPriceUSD = ligaCard.price * 0.19
-
-  let bestPrice: BestPrice = "tie"
-  let savings = 0
-
-  if (tcgPrice < ligaPriceUSD) { bestPrice = "tcg"; savings = ligaPriceUSD - tcgPrice }
-  else if (tcgPrice > ligaPriceUSD) { bestPrice = "liga"; savings = tcgPrice - ligaPriceUSD }
-
-  let matchType: MatchType = "none"
-  if (analysis.score >= 0.9) matchType = "perfect"
-  else if (analysis.score >= 0.7) matchType = "high"
-  else if (analysis.score >= 0.5) matchType = "medium"
-
-  return {
-    tcgCard, ligaCard, similarity: analysis.score, bestPrice, savings, matchType,
-    matchMethod: analysis.method, confidenceScore: Math.round(analysis.score * 100),
-    matchReasons: analysis.reasons
-  }
-}
-
 const formatCurrency = (amount: number, currency: string = "USD"): string => {
-  if (amount == null || isNaN(amount)) return "N/A"
+  if (amount == null || Number.isNaN(amount)) return "N/A"
   return new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", {
     style: "currency",
     currency: currency === "BRL" ? "BRL" : "USD",
@@ -254,31 +30,37 @@ const formatCurrency = (amount: number, currency: string = "USD"): string => {
 }
 
 export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }: PriceComparisonProps) => {
-  const [sortBy, setSortBy] = React.useState<'savings' | 'match' | 'price-low' | 'price-high'>('savings')
+  const [sortBy, setSortBy] = React.useState<"savings" | "match" | "price-low" | "price-high">("savings")
 
   const matches = useMemo(() => {
     if (!tcgResults || !ligaResults) return []
-    return matchCards(tcgResults, ligaResults)
-  }, [tcgResults, ligaResults])
+    return matchCards(tcgResults, ligaResults, exchangeRate)
+  }, [exchangeRate, ligaResults, tcgResults])
 
   const sortedMatches = useMemo(() => {
     const sorted = [...matches]
     switch (sortBy) {
-      case 'savings':
+      case "savings":
         return sorted.sort((a, b) => (b.savings || 0) - (a.savings || 0))
-      case 'match':
+      case "match":
         return sorted.sort((a, b) => {
-          const matchOrder = { 'perfect': 3, 'high': 2, 'medium': 1, 'none': 0 }
-          return matchOrder[b.matchType as keyof typeof matchOrder] - matchOrder[a.matchType as keyof typeof matchOrder]
+          const matchOrder = { perfect: 3, high: 2, medium: 1, none: 0 }
+          return matchOrder[b.matchType] - matchOrder[a.matchType]
         })
-      case 'price-low': {
+      case "price-low": {
         return sorted.sort((a, b) => {
-          const priceA = Math.min(a.tcgCard?.price?.marketPrice || Infinity, a.ligaCard?.price ? a.ligaCard.price * exchangeRate : Infinity)
-          const priceB = Math.min(b.tcgCard?.price?.marketPrice || Infinity, b.ligaCard?.price ? b.ligaCard.price * exchangeRate : Infinity)
+          const priceA = Math.min(
+            a.tcgCard?.price?.marketPrice || Number.POSITIVE_INFINITY,
+            a.ligaCard?.price ? a.ligaCard.price * exchangeRate : Number.POSITIVE_INFINITY,
+          )
+          const priceB = Math.min(
+            b.tcgCard?.price?.marketPrice || Number.POSITIVE_INFINITY,
+            b.ligaCard?.price ? b.ligaCard.price * exchangeRate : Number.POSITIVE_INFINITY,
+          )
           return priceA - priceB
         })
       }
-      case 'price-high': {
+      case "price-high": {
         return sorted.sort((a, b) => {
           const priceA = Math.max(a.tcgCard?.price?.marketPrice || 0, a.ligaCard?.price ? a.ligaCard.price * exchangeRate : 0)
           const priceB = Math.max(b.tcgCard?.price?.marketPrice || 0, b.ligaCard?.price ? b.ligaCard.price * exchangeRate : 0)
@@ -288,153 +70,135 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
       default:
         return sorted
     }
-  }, [matches, sortBy, exchangeRate])
+  }, [exchangeRate, matches, sortBy])
 
-  const stats = useMemo(() => ({
-    perfect: matches.filter(m => m.matchType === 'perfect').length,
-    high: matches.filter(m => m.matchType === 'high').length,
-    medium: matches.filter(m => m.matchType === 'medium').length,
-    none: matches.filter(m => m.matchType === 'none').length,
-    tcgBetter: matches.filter(m => m.bestPrice === "tcg" && m.savings && m.savings > 0).length,
-    ligaBetter: matches.filter(m => m.bestPrice === "liga" && m.savings && m.savings > 0).length,
-    totalSavings: matches.reduce((sum, m) => sum + (m.savings || 0), 0)
-  }), [matches])
+  const stats = useMemo(
+    () => ({
+      perfect: matches.filter((match) => match.matchType === "perfect").length,
+      high: matches.filter((match) => match.matchType === "high").length,
+      medium: matches.filter((match) => match.matchType === "medium").length,
+      none: matches.filter((match) => match.matchType === "none").length,
+      tcgBetter: matches.filter((match) => match.bestPrice === "tcg" && match.savings && match.savings > 0).length,
+      ligaBetter: matches.filter((match) => match.bestPrice === "liga" && match.savings && match.savings > 0).length,
+      totalSavings: matches.reduce((sum, match) => sum + (match.savings || 0), 0),
+    }),
+    [matches],
+  )
 
   if (!tcgResults || !ligaResults) {
-    return <div className="text-muted-foreground text-sm">Loading...</div>
+    return <div className="text-sm text-muted-foreground">Loading...</div>
   }
 
   return (
     <div className="space-y-8">
-      {/* Stats bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 stagger">
         <StatCard value={stats.perfect} label="Perfect Matches" icon={<Sparkles className="h-4 w-4" />} color="text-[#34d399]" />
         <StatCard value={stats.high + stats.medium} label="Good Matches" icon={<CheckCircle className="h-4 w-4" />} color="text-[#60a5fa]" />
         <StatCard value={stats.none} label="No Match" icon={<AlertTriangle className="h-4 w-4" />} color="text-muted-foreground" />
         <StatCard value={formatCurrency(stats.totalSavings)} label="Total Potential Savings" icon={<Crown className="h-4 w-4" />} color="text-primary" />
       </div>
 
-      {/* Sort */}
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sort matches:</span>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Sort matches:</span>
         {([
-          { key: 'savings' as const, label: 'Best Deals' },
-          { key: 'match' as const, label: 'Best Match' },
-          { key: 'price-low' as const, label: 'Lowest Price' },
-          { key: 'price-high' as const, label: 'Highest Price' },
+          { key: "savings" as const, label: "Best Deals" },
+          { key: "match" as const, label: "Best Match" },
+          { key: "price-low" as const, label: "Lowest Price" },
+          { key: "price-high" as const, label: "Highest Price" },
         ]).map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setSortBy(key)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${sortBy === key
-              ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(129,140,248,0.3)]'
-              : 'glass text-muted-foreground hover:text-foreground hover:bg-white/5 border border-border/50'
-              }`}
+            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all duration-300 ${
+              sortBy === key
+                ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(129,140,248,0.3)]"
+                : "glass border border-border/50 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            }`}
           >
             {label}
           </button>
         ))}
       </div>
 
-      {/* Match cards */}
       <div className="flex flex-col gap-4">
         {sortedMatches.map((match, index) => {
-          const ligaPriceUSD = match.ligaCard?.price ? match.ligaCard.price * exchangeRate : 0
+          const ligaPriceUsd = match.ligaCard?.price ? match.ligaCard.price * exchangeRate : 0
           const ligaVariation = match.ligaCard?.numericCode ? identifyVariation(match.ligaCard.numericCode) : null
 
           return (
             <div
-              key={index}
-              className={`glass rounded-2xl overflow-hidden card-hover transition-all duration-300 border ${match.matchType === 'perfect' ? 'border-[#34d399]/40 shadow-[0_0_20px_rgba(52,211,153,0.1)]' :
-                match.matchType === 'high' ? 'border-[#60a5fa]/40 shadow-[0_0_20px_rgba(96,165,250,0.1)]' :
-                  match.matchType === 'medium' ? 'border-primary/40' :
-                    'border-border/40'
-                }`}
+              key={`${match.tcgCard?.productId || "tcg"}-${match.ligaCard?.numericCode || index}`}
+              className={`card-hover overflow-hidden rounded-2xl border glass transition-all duration-300 ${
+                match.matchType === "perfect"
+                  ? "border-[#34d399]/40 shadow-[0_0_20px_rgba(52,211,153,0.1)]"
+                  : match.matchType === "high"
+                    ? "border-[#60a5fa]/40 shadow-[0_0_20px_rgba(96,165,250,0.1)]"
+                    : match.matchType === "medium"
+                      ? "border-primary/40"
+                      : "border-border/40"
+              }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="p-6">
-                {/* Two-column card layout */}
-                <div className="grid md:grid-cols-2 gap-8 md:gap-12 relative">
-                  {/* Divider line for desktop */}
-                  <div className="hidden md:block absolute left-1/2 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-border to-transparent -translate-x-1/2" />
+                <div className="relative grid gap-8 md:grid-cols-2 md:gap-12">
+                  <div className="absolute bottom-4 top-4 left-1/2 hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-border to-transparent md:block" />
 
-                  {/* TCGPlayer side */}
                   {match.tcgCard && (
                     <CardSide
                       platform="tcg"
                       name={match.tcgCard.name}
                       imageUrl={match.tcgCard.imageUrl}
-                      code={match.tcgCard.extendedData?.find(d => d.name === 'Number')?.value || 'No Code'}
-                      setName={(match.tcgCard as any).groupName}
-                      price={match.tcgCard.price?.marketPrice != null ? `$${match.tcgCard.price.marketPrice.toFixed(2)}` : 'N/A'}
+                      code={match.tcgCard.extendedData?.find((detail) => detail.name === "Number")?.value || "No Code"}
+                      setName={match.tcgCard.groupName || match.tcgCard.setName}
+                      price={match.tcgCard.price?.marketPrice != null ? `$${match.tcgCard.price.marketPrice.toFixed(2)}` : "N/A"}
                       url={match.tcgCard.url}
                       isBest={match.bestPrice === "tcg"}
                     />
                   )}
 
-                  {/* Liga side */}
                   {match.ligaCard && (
                     <CardSide
                       platform="liga"
                       name={match.ligaCard.name}
                       imageUrl={match.ligaCard.imageUrl}
-                      code={match.ligaCard.numericCode || 'No Code'}
+                      code={match.ligaCard.numericCode || "No Code"}
                       setName={match.ligaCard.set}
-                      variation={ligaVariation?.name !== 'Standard' ? ligaVariation?.name : undefined}
-                      price={`R$ ${match.ligaCard.price?.toFixed(2) || 'N/A'}`}
-                      priceSecondary={ligaPriceUSD > 0 ? `${formatCurrency(ligaPriceUSD)}` : undefined}
+                      variation={ligaVariation?.name !== "Standard" ? ligaVariation?.name : undefined}
+                      price={`R$ ${match.ligaCard.price?.toFixed(2) || "N/A"}`}
+                      priceSecondary={ligaPriceUsd > 0 ? formatCurrency(ligaPriceUsd) : undefined}
                       url={match.ligaCard.url}
                       isBest={match.bestPrice === "liga"}
                     />
                   )}
                 </div>
 
-                {/* Match info footer */}
-                <div className={`mt-6 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 backdrop-blur-md ${match.matchType === 'perfect' ? 'bg-[#34d399]/5 border border-[#34d399]/20' :
-                  match.matchType === 'high' ? 'bg-[#60a5fa]/5 border border-[#60a5fa]/20' :
-                    match.matchType === 'medium' ? 'bg-primary/5 border border-primary/20' :
-                      'bg-white/5 border border-white/10'
-                  }`}>
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    {match.matchType === "perfect" && (
-                      <Badge className="bg-[#34d399]/10 text-[#34d399] border-none text-[12px] font-bold px-2.5 py-1">
-                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
-                        Perfect Match ({match.confidenceScore}%)
-                      </Badge>
-                    )}
-                    {match.matchType === "high" && (
-                      <Badge className="bg-[#60a5fa]/10 text-[#60a5fa] border-none text-[12px] font-bold px-2.5 py-1">
-                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
-                        Solid Match ({match.confidenceScore}%)
-                      </Badge>
-                    )}
-                    {match.matchType === "medium" && (
-                      <Badge className="bg-primary/10 text-primary border-none text-[12px] font-bold px-2.5 py-1">
-                        <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
-                        Partial Match ({match.confidenceScore}%)
-                      </Badge>
-                    )}
-                    {match.matchType === "none" && (
-                      <Badge className="bg-muted border-none text-[12px] text-muted-foreground font-bold px-2.5 py-1">
-                        <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
-                        No Match Found
-                      </Badge>
-                    )}
-
-                    {/* Reasons as small inline text */}
-                    {match.matchReasons.length > 0 && match.matchType !== 'none' && (
-                      <span className="text-[11px] text-muted-foreground/80 font-medium hidden sm:inline ml-2">
-                        {match.matchReasons[0]}
-                      </span>
+                <div
+                  className={`mt-6 flex flex-col justify-between gap-4 rounded-xl border p-4 backdrop-blur-md sm:flex-row sm:items-center ${
+                    match.matchType === "perfect"
+                      ? "border-[#34d399]/20 bg-[#34d399]/5"
+                      : match.matchType === "high"
+                        ? "border-[#60a5fa]/20 bg-[#60a5fa]/5"
+                        : match.matchType === "medium"
+                          ? "border-primary/20 bg-primary/5"
+                          : "border-white/10 bg-white/5"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <MatchBadge match={match} />
+                    {match.matchReasons.length > 0 && match.matchType !== "none" && (
+                      <span className="ml-2 hidden text-[11px] font-medium text-muted-foreground/80 sm:inline">{match.matchReasons[0]}</span>
                     )}
                   </div>
 
                   {match.savings && match.savings > 0 && (
-                    <Badge className={`text-xs font-bold gap-1.5 px-3 py-1 scale-105 origin-right border-none ${match.bestPrice === "tcg"
-                      ? 'bg-[#60a5fa]/15 text-[#60a5fa] shadow-[0_0_10px_rgba(96,165,250,0.2)]'
-                      : 'bg-[#34d399]/15 text-[#34d399] shadow-[0_0_10px_rgba(52,211,153,0.2)]'
-                      }`}>
-                      <Crown className="w-3.5 h-3.5" />
+                    <Badge
+                      className={`origin-right scale-105 gap-1.5 border-none px-3 py-1 text-xs font-bold ${
+                        match.bestPrice === "tcg"
+                          ? "bg-[#60a5fa]/15 text-[#60a5fa] shadow-[0_0_10px_rgba(96,165,250,0.2)]"
+                          : "bg-[#34d399]/15 text-[#34d399] shadow-[0_0_10px_rgba(52,211,153,0.2)]"
+                      }`}
+                    >
+                      <Crown className="h-3.5 w-3.5" />
                       Save {formatCurrency(match.savings)} on {match.bestPrice === "tcg" ? "TCGPlayer" : "Liga"}
                     </Badge>
                   )}
@@ -448,16 +212,51 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
   )
 }
 
+function MatchBadge({ match }: { match: CardMatch }) {
+  if (match.matchType === "perfect") {
+    return (
+      <Badge className="border-none bg-[#34d399]/10 px-2.5 py-1 text-[12px] font-bold text-[#34d399]">
+        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+        Perfect Match ({match.confidenceScore}%)
+      </Badge>
+    )
+  }
+
+  if (match.matchType === "high") {
+    return (
+      <Badge className="border-none bg-[#60a5fa]/10 px-2.5 py-1 text-[12px] font-bold text-[#60a5fa]">
+        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+        Solid Match ({match.confidenceScore}%)
+      </Badge>
+    )
+  }
+
+  if (match.matchType === "medium") {
+    return (
+      <Badge className="border-none bg-primary/10 px-2.5 py-1 text-[12px] font-bold text-primary">
+        <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+        Partial Match ({match.confidenceScore}%)
+      </Badge>
+    )
+  }
+
+  return (
+    <Badge className="border-none bg-muted px-2.5 py-1 text-[12px] font-bold text-muted-foreground">
+      <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+      No Match Found
+    </Badge>
+  )
+}
 
 function StatCard({ value, label, icon, color }: { value: string | number; label: string; icon: React.ReactNode; color: string }) {
   return (
-    <div className="glass border border-border/50 rounded-2xl p-5 flex items-start justify-between relative overflow-hidden group">
-      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 group-hover:opacity-20 transition-all duration-500">
-        <div className={`w-12 h-12 ${color}`}>{icon}</div>
+    <div className="glass group relative flex items-start justify-between overflow-hidden rounded-2xl border border-border/50 p-5">
+      <div className="absolute right-0 top-0 p-4 opacity-10 transition-all duration-500 group-hover:scale-125 group-hover:opacity-20">
+        <div className={`h-12 w-12 ${color}`}>{icon}</div>
       </div>
       <div className="relative z-10">
-        <div className={`text-3xl font-extrabold font-mono tracking-tight drop-shadow-sm ${color}`}>{value}</div>
-        <div className="text-[11px] text-muted-foreground font-bold mt-2 uppercase tracking-widest">{label}</div>
+        <div className={`font-mono text-3xl font-extrabold tracking-tight drop-shadow-sm ${color}`}>{value}</div>
+        <div className="mt-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{label}</div>
       </div>
     </div>
   )
@@ -487,65 +286,66 @@ function CardSide({
   isBest: boolean
 }) {
   return (
-    <div className={`flex gap-5 group rounded-xl p-2 transition-all ${isBest ? 'bg-primary/5 -m-2' : ''}`}>
-      {/* Thumbnail */}
-      <div className="w-[84px] h-[116px] rounded-xl overflow-hidden bg-secondary/30 flex-shrink-0 border border-border/50 shadow-sm relative">
+    <div className={`group flex gap-5 rounded-xl p-2 transition-all ${isBest ? "-m-2 bg-primary/5" : ""}`}>
+      <div className="relative h-[116px] w-[84px] flex-shrink-0 overflow-hidden rounded-xl border border-border/50 bg-secondary/30 shadow-sm">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:scale-[1.05]"
-            onError={(e) => { e.currentTarget.src = '/placeholder.svg' }}
+            className="h-full w-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:scale-[1.05]"
+            onError={(event) => {
+              event.currentTarget.src = "/placeholder.svg"
+            }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground font-medium border border-dashed border-border/50">
+          <div className="flex h-full w-full items-center justify-center border border-dashed border-border/50 text-[10px] font-medium text-muted-foreground">
             No img
           </div>
         )}
       </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0 flex flex-col pt-1">
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${platform === 'tcg' ? 'platform-tcg' : 'platform-liga'}`}>
-            {platform === 'tcg' ? 'TCGPlayer' : 'Liga One Piece'}
+      <div className="flex min-w-0 flex-1 flex-col pt-1">
+        <div className="mb-2 flex items-center gap-2">
+          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${platform === "tcg" ? "platform-tcg" : "platform-liga"}`}>
+            {platform === "tcg" ? "TCGPlayer" : "Liga One Piece"}
           </span>
-          <span className="text-[11px] text-muted-foreground font-mono font-medium flex items-center gap-0.5 bg-secondary/30 px-1.5 rounded-md">
-            <Hash className="w-3 h-3 text-muted-foreground/70" />{code}
+          <span className="flex items-center gap-0.5 rounded-md bg-secondary/30 px-1.5 font-mono text-[11px] font-medium text-muted-foreground">
+            <Hash className="h-3 w-3 text-muted-foreground/70" />
+            {code}
           </span>
         </div>
 
-        <h4 className="font-bold text-[15px] text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">{name}</h4>
+        <h4 className="line-clamp-2 text-[15px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary">{name}</h4>
 
-        <div className="text-xs text-muted-foreground/80 mt-1.5 flex flex-wrap gap-x-4 gap-y-1 font-medium">
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-muted-foreground/80">
           {setName && (
             <span className="flex items-center gap-1.5">
-              <Package className="w-3.5 h-3.5 text-muted-foreground/60" />{setName}
+              <Package className="h-3.5 w-3.5 text-muted-foreground/60" />
+              {setName}
             </span>
           )}
           {variation && (
             <span className="flex items-center gap-1.5 text-primary drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]">
-              <Sparkles className="w-3.5 h-3.5" />{variation}
+              <Sparkles className="h-3.5 w-3.5" />
+              {variation}
             </span>
           )}
         </div>
 
-        <div className="mt-auto pt-3 flex items-end justify-between border-t border-border/20">
+        <div className="mt-auto flex items-end justify-between border-t border-border/20 pt-3">
           <div>
-            <div className={`text-xl font-extrabold font-mono leading-none tracking-tight ${isBest ? 'text-primary drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]' : 'text-foreground'}`}>
+            <div className={`font-mono text-xl font-extrabold leading-none tracking-tight ${isBest ? "text-primary drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]" : "text-foreground"}`}>
               {price}
             </div>
-            {priceSecondary && (
-              <div className="text-[12px] text-muted-foreground/70 font-mono font-medium mt-1">{'≈'} {priceSecondary}</div>
-            )}
+            {priceSecondary && <div className="mt-1 font-mono text-[12px] font-medium text-muted-foreground/70">≈ {priceSecondary}</div>}
           </div>
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider hover:text-primary transition-colors bg-white/5 hover:bg-white/10 px-2 py-1.5 rounded-lg"
+            className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-white/10 hover:text-primary"
           >
-            Visit <ExternalLink className="w-3 h-3" />
+            Visit <ExternalLink className="h-3 w-3" />
           </a>
         </div>
       </div>

@@ -1,3 +1,11 @@
+export interface ExchangeRateResponse {
+  success?: boolean
+  timestamp?: number
+  base?: string
+  date?: string
+  rates: Record<string, number>
+}
+
 export interface CurrencyConversion {
   from: string
   to: string
@@ -10,81 +18,79 @@ export interface CurrencyConversion {
   warning?: string
 }
 
-let cachedRate: { rate: number; timestamp: number } | null = null
-const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
+interface CachedRateEntry {
+  rate: number
+  timestamp: number
+}
 
-export async function convertCurrency(
-  amount: number,
-  from: string = "BRL",
-  to: string = "USD"
-): Promise<CurrencyConversion> {
-  try {
-    const response = await fetch(
-      `/api/currency/convert?from=${from}&to=${to}&amount=${amount}`
-    )
+const CACHE_DURATION_MS = 10 * 60 * 1000
+const rateCache = new Map<string, CachedRateEntry>()
 
-    if (!response.ok) {
-      throw new Error("Currency conversion failed")
-    }
+function cacheKey(from: string, to: string): string {
+  return `${from}->${to}`
+}
 
-    const conversion = await response.json()
-    
-    if (!conversion.fallback) {
-      cachedRate = {
-        rate: conversion.rate,
-        timestamp: Date.now()
-      }
-    }
+function todayIsoDate(): string {
+  return new Date().toISOString().split("T")[0]
+}
 
-    return conversion
-  } catch (error) {
-    console.error("Currency conversion error:", error)
-    
-    if (cachedRate && Date.now() - cachedRate.timestamp < CACHE_DURATION) {
-      return {
-        from,
-        to,
-        amount,
-        rate: cachedRate.rate,
-        convertedAmount: amount * cachedRate.rate,
-        timestamp: cachedRate.timestamp,
-        date: new Date().toISOString().split('T')[0],
-        fallback: true,
-        warning: "Using cached exchange rate"
-      }
-    }
+export function getCachedRate(from: string, to: string): number | null {
+  const entry = rateCache.get(cacheKey(from, to))
+  if (!entry) return null
+  if (Date.now() - entry.timestamp > CACHE_DURATION_MS) {
+    rateCache.delete(cacheKey(from, to))
+    return null
+  }
+  return entry.rate
+}
 
-    const fallbackRate = 0.20 // 
-    return {
-      from,
-      to,
-      amount,
-      rate: fallbackRate,
-      convertedAmount: amount * fallbackRate,
-      timestamp: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      fallback: true,
-      warning: "Using approximate exchange rate"
-    }
+export function setCachedRate(from: string, to: string, rate: number): void {
+  rateCache.set(cacheKey(from, to), {
+    rate,
+    timestamp: Date.now(),
+  })
+}
+
+export function buildConversion(from: string, to: string, amount: number, rate: number, options?: { fallback?: boolean; warning?: string; timestamp?: number; date?: string }): CurrencyConversion {
+  return {
+    from,
+    to,
+    amount,
+    rate,
+    convertedAmount: amount * rate,
+    timestamp: options?.timestamp ?? Date.now(),
+    date: options?.date ?? todayIsoDate(),
+    fallback: options?.fallback,
+    warning: options?.warning,
   }
 }
 
-export async function getBRLToUSDRate(): Promise<number> {
-  try {
-    const conversion = await convertCurrency(1, "BRL", "USD")
-    return conversion.rate
-  } catch (error) {
-    console.error("Error getting BRL to USD rate:", error)
-    return 0.20 // 
+export async function convertCurrency(amount: number, from: string = "BRL", to: string = "USD"): Promise<CurrencyConversion> {
+  const response = await fetch(`/api/currency/convert?from=${from}&to=${to}&amount=${amount}`)
+
+  if (!response.ok) {
+    throw new Error("Currency conversion failed")
   }
+
+  const conversion: CurrencyConversion = await response.json()
+  if (!conversion.fallback) {
+    setCachedRate(from, to, conversion.rate)
+  }
+
+  return conversion
+}
+
+export async function getBRLToUSDRate(): Promise<number> {
+  const conversion = await convertCurrency(1, "BRL", "USD")
+  return conversion.rate
 }
 
 export function formatCurrency(amount: number, currency: string = "USD"): string {
   const locale = currency === "BRL" ? "pt-BR" : "en-US"
-  
+
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: currency,
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
@@ -94,14 +100,14 @@ export function formatCurrencyWithConversion(
   amount: number,
   originalCurrency: string,
   convertedAmount?: number,
-  targetCurrency: string = "USD"
+  targetCurrency: string = "USD",
 ): string {
   const original = formatCurrency(amount, originalCurrency)
-  
+
   if (convertedAmount !== undefined && originalCurrency !== targetCurrency) {
     const converted = formatCurrency(convertedAmount, targetCurrency)
     return `${original} (≈ ${converted})`
   }
-  
+
   return original
 }

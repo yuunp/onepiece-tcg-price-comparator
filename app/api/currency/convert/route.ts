@@ -1,14 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-
-interface ExchangeRateResponse {
-  success: boolean
-  timestamp: number
-  base: string
-  date: string
-  rates: {
-    [key: string]: number
-  }
-}
+import { BRL_TO_USD_FALLBACK_RATE } from "@/lib/runtime-config"
+import { buildConversion, type ExchangeRateResponse, getCachedRate, setCachedRate } from "@/lib/currency"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -16,20 +8,22 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to") || "USD"
   const amount = Number.parseFloat(searchParams.get("amount") || "1")
 
-  if (isNaN(amount)) {
+  if (Number.isNaN(amount)) {
     return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
   }
 
+  const cachedRate = getCachedRate(from, to)
+  if (cachedRate != null) {
+    return NextResponse.json(buildConversion(from, to, amount, cachedRate))
+  }
+
   try {
-    // Using exchangerate-api.com (free tier allows 1500 requests/month)
-    const response = await fetch(
-      `https://api.exchangerate-api.com/v4/latest/${from}`,
-      {
-        headers: {
-          "User-Agent": "OnePieceComparator/1.0",
-        },
-      }
-    )
+    const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${from}`, {
+      headers: {
+        "User-Agent": "BountyDex/1.0",
+      },
+      next: { revalidate: 600 },
+    })
 
     if (!response.ok) {
       throw new Error(`Exchange rate API error: ${response.status}`)
@@ -46,34 +40,23 @@ export async function GET(request: NextRequest) {
       throw new Error(`Exchange rate not found for ${from} to ${to}`)
     }
 
-    const convertedAmount = amount * rate
+    setCachedRate(from, to, rate)
 
-    return NextResponse.json({
-      from,
-      to,
-      amount,
-      rate,
-      convertedAmount,
-      timestamp: data.timestamp || Date.now(),
-      date: data.date || new Date().toISOString().split('T')[0],
-    })
+    return NextResponse.json(
+      buildConversion(from, to, amount, rate, {
+        timestamp: data.timestamp,
+        date: data.date,
+      }),
+    )
   } catch (error) {
     console.error("Currency conversion error:", error)
-    
-    // Fallback to approximate rate if API fails
-    const fallbackRate = from === "BRL" && to === "USD" ? 0.20 : 5.0 // Approximate BRL to USD
-    const convertedAmount = amount * fallbackRate
 
-    return NextResponse.json({
-      from,
-      to,
-      amount,
-      rate: fallbackRate,
-      convertedAmount,
-      timestamp: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      fallback: true,
-      warning: "Using fallback exchange rate due to API error"
-    })
+    const fallbackRate = from === "BRL" && to === "USD" ? BRL_TO_USD_FALLBACK_RATE : 1 / BRL_TO_USD_FALLBACK_RATE
+    return NextResponse.json(
+      buildConversion(from, to, amount, fallbackRate, {
+        fallback: true,
+        warning: "Using fallback exchange rate due to API error",
+      }),
+    )
   }
 }

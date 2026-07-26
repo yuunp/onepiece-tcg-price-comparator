@@ -1,62 +1,67 @@
-// app/api/liga/search/route.ts
-import { NextResponse } from "next/server";
-import { LigaOnePieceScraper } from "@/scripts/liga-scraper";
+import { NextResponse } from "next/server"
+import { hasScraperApiKey } from "@/lib/runtime-config"
+import { LigaOnePieceScraper } from "@/scripts/liga-scraper"
 
-// ✅ CRIAR INSTÂNCIA GLOBAL para evitar problemas de fechamento
-let globalScraper: LigaOnePieceScraper | null = null;
+let globalScraper: LigaOnePieceScraper | null = null
+
+async function getScraper(): Promise<LigaOnePieceScraper> {
+  if (!globalScraper) {
+    globalScraper = new LigaOnePieceScraper()
+    await globalScraper.initialize()
+  }
+  return globalScraper
+}
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const query = searchParams.get("q");
+  const { searchParams } = new URL(req.url)
+  const query = searchParams.get("q")
 
   if (!query) {
-    return NextResponse.json(
-      { error: "Parâmetro 'q' é obrigatório" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Parâmetro 'q' é obrigatório" }, { status: 400 })
+  }
+
+  if (!hasScraperApiKey()) {
+    return NextResponse.json({
+      query,
+      source: "ligaonepiece",
+      totalFound: 0,
+      results: [],
+      available: false,
+      warning: "SCRAPER_API_KEY is not configured",
+    })
   }
 
   try {
-    console.log(`🚀 Iniciando busca por: "${query}"`);
-    
-    // ✅ USAR INSTÂNCIA GLOBAL ou criar nova
-    if (!globalScraper) {
-      globalScraper = new LigaOnePieceScraper();
-      await globalScraper.initialize();
-      console.log("✅ Novo scraper inicializado");
-    }
-
-    const results = await globalScraper.searchCards(query);
-
-    console.log(`✅ Busca concluída: ${results.length} resultados`);
+    const scraper = await getScraper()
+    const results = await scraper.searchCards(query)
 
     return NextResponse.json({
       query,
-      count: results.length,
+      source: "ligaonepiece",
+      totalFound: results.length,
       results,
-    });
-  } catch (error: any) {
-    console.error("❌ Erro no /api/liga/search:", error);
-    
-    // ✅ Resetar scraper em caso de erro
+      available: true,
+    })
+  } catch (error) {
+    console.error("Liga route error:", error)
+
     if (globalScraper) {
-      await globalScraper.close().catch(() => {});
-      globalScraper = null;
+      await globalScraper.close().catch(() => undefined)
+      globalScraper = null
     }
-    
+
     return NextResponse.json(
-      { 
-        error: "Erro ao buscar no LigaOnePiece", 
-        details: error.message
+      {
+        error: "Erro ao buscar no LigaOnePiece",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
-    );
+      { status: 500 },
+    )
   }
 }
 
-// ✅ Fechar scraper quando o servidor for desligado
-process.on('SIGTERM', async () => {
+process.on("SIGTERM", async () => {
   if (globalScraper) {
-    await globalScraper.close();
+    await globalScraper.close()
   }
-});
+})
