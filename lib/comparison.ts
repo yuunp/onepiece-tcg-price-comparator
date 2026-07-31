@@ -72,7 +72,9 @@ export const buildComparisonGroups = (
   const grouped = new Map<string, CardEntry[]>()
 
   for (const entry of entries) {
-    const key = `${entry.normalizedName}::${entry.baseCode || "no-code"}`
+    const key = entry.baseCode
+      ? `code:${entry.baseCode}`
+      : `name:${entry.normalizedName}::set:${normalizeSetName(entry.setName)}`
     const list = grouped.get(key) || []
     list.push(entry)
     grouped.set(key, list)
@@ -192,6 +194,15 @@ const normalizeCode = (code?: string | null): string => {
   if (!code) return ""
   return code.toUpperCase().replace(/\s+/g, "").replace(/\((.*?)\)/g, "").replace(/-(AA|PA|SP|PR|RE|FA|G|GOLD)$/i, "")
 }
+
+const normalizeSetName = (setName: string): string =>
+  setName
+    .toLowerCase()
+    .replace(/starter deck[^a-z0-9]*/g, "st")
+    .replace(/premium booster[^a-z0-9]*/g, "prb")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
 
 const extractCardNumber = (name: string): string | null => {
   if (!name) return null

@@ -1,11 +1,16 @@
 "use client"
 
 import React, { useMemo } from "react"
-import { ExternalLink, Package, TrendingDown } from "lucide-react"
+import { ExternalLink } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import {
+  buildComparisonGroups,
+  convertUsdToBrl,
+  type CardEntry,
+  type ComparisonGroup,
+} from "@/lib/comparison"
 import type { LigaCard } from "@/lib/liga"
 import type { TCGPlayerCard } from "@/lib/tcgplayer"
-import { convertUsdToBrl } from "@/lib/comparison"
 
 interface PriceComparisonProps {
   tcgResults: TCGPlayerCard[]
@@ -13,220 +18,147 @@ interface PriceComparisonProps {
   exchangeRate?: number
 }
 
-type Row = {
-  id: string
-  title: string
-  tcgCard?: TCGPlayerCard
-  ligaCard?: LigaCard
-}
-
-const formatCurrency = (amount: number, currency: "USD" | "BRL") =>
-  new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", {
-    style: "currency",
-    currency,
-  }).format(amount)
-
 export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }: PriceComparisonProps) => {
-  const rows = useMemo(() => buildRows(tcgResults, ligaResults), [ligaResults, tcgResults])
-
-  const comparedRows = rows.filter((row) => row.tcgCard && row.ligaCard)
-  const tcgOnlyRows = rows.filter((row) => row.tcgCard && !row.ligaCard)
-  const ligaOnlyRows = rows.filter((row) => row.ligaCard && !row.tcgCard)
-
-  const totalSavings = comparedRows.reduce((sum, row) => {
-    const tcgPrice = row.tcgCard?.price?.marketPrice || 0
-    const ligaUsd = row.ligaCard ? row.ligaCard.price * exchangeRate : 0
-    if (!tcgPrice || !ligaUsd) return sum
-    return sum + Math.abs(tcgPrice - ligaUsd)
-  }, 0)
+  const groups = useMemo(
+    () => buildComparisonGroups(tcgResults, ligaResults, exchangeRate),
+    [exchangeRate, ligaResults, tcgResults],
+  )
+  const comparedGroups = groups.filter((group) => group.matchType === "comparison")
+  const unmatchedGroups = groups.filter((group) => group.matchType === "solo")
+  const comparedEntries = comparedGroups.reduce((total, group) => total + group.entries.length, 0)
+  const tcgOnly = unmatchedGroups.filter((group) => group.tcgEntries.length > 0).length
+  const ligaOnly = unmatchedGroups.filter((group) => group.ligaEntries.length > 0).length
+  const totalSavings = comparedGroups.reduce((total, group) => total + (group.savings || 0), 0)
 
   return (
     <div className="space-y-10">
       <div className="stat-strip grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
-        <StatCard value={comparedRows.length} label="Compared rows" />
-        <StatCard value={tcgOnlyRows.length} label="TCG only" />
-        <StatCard value={ligaOnlyRows.length} label="Liga only" />
-        <StatCard value={formatCurrency(totalSavings, "USD")} label="Visible price spread" />
+        <StatCard value={comparedGroups.length} label="Card identities" />
+        <StatCard value={comparedEntries} label="Listings grouped" />
+        <StatCard value={tcgOnly + ligaOnly} label="Unmatched" />
+        <StatCard value={formatCurrency(totalSavings, "USD")} label="Price difference" />
       </div>
 
-      <Section title="Direct comparison" description="Same visible title, two sources.">
-        {comparedRows.length ? comparedRows.map((row) => <ComparisonRow key={row.id} row={row} exchangeRate={exchangeRate} />) : <Empty message="No direct title matches found yet." />}
-      </Section>
+      <GroupSection
+        title="Matched card identities"
+        description="Listings are grouped by card number. Variants stay visible inside the group."
+        groups={comparedGroups}
+        exchangeRate={exchangeRate}
+        emptyMessage="No exact card-number matches were found. Unmatched listings remain below."
+      />
 
-      <Section title="Only on TCGPlayer" description="Returned by TCGPlayer, not Liga.">
-        {tcgOnlyRows.length ? tcgOnlyRows.map((row) => <ComparisonRow key={row.id} row={row} exchangeRate={exchangeRate} />) : <Empty message="No TCG-only cards." />}
-      </Section>
-
-      <Section title="Only on Liga" description="Returned by Liga, not TCGPlayer.">
-        {ligaOnlyRows.length ? ligaOnlyRows.map((row) => <ComparisonRow key={row.id} row={row} exchangeRate={exchangeRate} />) : <Empty message="No Liga-only cards." />}
-      </Section>
+      <GroupSection
+        title="Unmatched listings"
+        description="No reliable identity counterpart was found on the other marketplace."
+        groups={unmatchedGroups}
+        exchangeRate={exchangeRate}
+        emptyMessage="Every returned listing has a counterpart."
+      />
     </div>
   )
 }
 
-function buildRows(tcgResults: TCGPlayerCard[], ligaResults: LigaCard[]): Row[] {
-  const ligaByTitle = new Map<string, LigaCard[]>()
-  for (const card of ligaResults) {
-    const key = normalizeTitle(card.name)
-    const list = ligaByTitle.get(key) || []
-    list.push(card)
-    ligaByTitle.set(key, list)
-  }
-
-  const rows: Row[] = []
-  const usedLiga = new Set<string>()
-
-  for (const tcgCard of tcgResults) {
-    const key = normalizeTitle(tcgCard.name)
-    const ligaMatches = ligaByTitle.get(key) || []
-    const ligaCard = ligaMatches.find((candidate, index) => {
-      const id = `${key}:${index}`
-      return !usedLiga.has(id)
-    })
-
-    if (ligaCard) {
-      const idx = ligaMatches.indexOf(ligaCard)
-      usedLiga.add(`${key}:${idx}`)
-      rows.push({
-        id: `pair:${key}:${tcgCard.productId}:${idx}`,
-        title: cleanupTitle(tcgCard.name),
-        tcgCard,
-        ligaCard,
-      })
-    } else {
-      rows.push({
-        id: `tcg:${tcgCard.productId}`,
-        title: cleanupTitle(tcgCard.name),
-        tcgCard,
-      })
-    }
-  }
-
-  for (const [key, ligaCardsForTitle] of ligaByTitle.entries()) {
-    ligaCardsForTitle.forEach((ligaCard, index) => {
-      const marker = `${key}:${index}`
-      if (usedLiga.has(marker)) return
-      rows.push({
-        id: `liga:${marker}`,
-        title: cleanupTitle(ligaCard.name),
-        ligaCard,
-      })
-    })
-  }
-
-  return rows.sort((a, b) => a.title.localeCompare(b.title))
-}
-
-function normalizeTitle(name: string): string {
-  return cleanupTitle(name)
-    .toLowerCase()
-    .replace(/monkey\.d\./g, "luffy")
-    .replace(/monkey d luffy/g, "luffy")
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
-function cleanupTitle(name: string): string {
-  return name.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim()
-}
-
-function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function GroupSection({
+  title,
+  description,
+  groups,
+  exchangeRate,
+  emptyMessage,
+}: {
+  title: string
+  description: string
+  groups: ComparisonGroup[]
+  exchangeRate: number
+  emptyMessage: string
+}) {
   return (
     <section className="space-y-4">
-      <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <p className="text-right text-xs text-muted-foreground">{description}</p>
+      <div className="flex flex-col gap-1 border-b border-border pb-3 sm:flex-row sm:items-baseline sm:justify-between">
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        <p className="text-xs text-muted-foreground sm:text-right">{description}</p>
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-3">
+        {groups.length ? groups.map((group) => <GroupCard key={group.groupKey} group={group} exchangeRate={exchangeRate} />) : <Empty message={emptyMessage} />}
+      </div>
     </section>
   )
 }
 
-function ComparisonRow({ row, exchangeRate }: { row: Row; exchangeRate: number }) {
-  const tcgPrice = row.tcgCard?.price?.marketPrice
-  const ligaUsd = row.ligaCard ? row.ligaCard.price * exchangeRate : undefined
-  const better = tcgPrice != null && ligaUsd != null ? (tcgPrice < ligaUsd ? "TCGPlayer" : ligaUsd < tcgPrice ? "Liga" : "Tie") : undefined
+function GroupCard({ group, exchangeRate }: { group: ComparisonGroup; exchangeRate: number }) {
+  const identityLabel = group.subtitle || "Identity inferred from name and set"
+  const matchLabel = group.matchType === "comparison" ? "Matched by identity" : "No counterpart"
 
   return (
-    <article className="comparison-row rounded-xl p-4 transition-colors">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-base font-semibold text-foreground">{row.title}</h3>
-          {better && (
-            <Badge variant="secondary" className="mt-2 rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px]">
-              Better price: {better}
-            </Badge>
-          )}
+    <article className="comparison-row rounded-xl p-4 transition-colors sm:p-5">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-foreground">{group.title}</h3>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-mono">{identityLabel}</span>
+            <span aria-hidden="true">·</span>
+            <span>{group.entries.length} listing{group.entries.length === 1 ? "" : "s"}</span>
+          </div>
         </div>
+        <Badge variant="secondary" className="w-fit rounded-md border border-border bg-transparent px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+          {matchLabel}
+        </Badge>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <PlatformCard platform="TCGPlayer" card={row.tcgCard} primaryPrice={tcgPrice != null ? formatCurrency(tcgPrice, "USD") : undefined} secondaryPrice={tcgPrice != null ? formatCurrency(convertUsdToBrl(tcgPrice, exchangeRate), "BRL") : undefined} />
-        <PlatformCard platform="Liga" card={row.ligaCard} primaryPrice={row.ligaCard ? formatCurrency(row.ligaCard.price, "BRL") : undefined} secondaryPrice={ligaUsd != null ? formatCurrency(ligaUsd, "USD") : undefined} />
+      <div className="grid gap-3 lg:grid-cols-2">
+        <MarketplaceColumn label="TCGPlayer" entries={group.tcgEntries} exchangeRate={exchangeRate} />
+        <MarketplaceColumn label="Liga" entries={group.ligaEntries} exchangeRate={exchangeRate} />
       </div>
     </article>
   )
 }
 
-function PlatformCard({
-  platform,
-  card,
-  primaryPrice,
-  secondaryPrice,
-}: {
-  platform: "TCGPlayer" | "Liga"
-  card?: TCGPlayerCard | LigaCard
-  primaryPrice?: string
-  secondaryPrice?: string
-}) {
-  if (!card) {
-    return <Empty message={`No ${platform} result for this row.`} />
-  }
+function MarketplaceColumn({ label, entries, exchangeRate }: { label: string; entries: CardEntry[]; exchangeRate: number }) {
+  return (
+    <div className="source-card rounded-lg p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <span className={label === "TCGPlayer" ? "platform-tcg rounded-md px-2 py-1 text-[10px] font-bold" : "platform-liga rounded-md px-2 py-1 text-[10px] font-bold"}>
+          {label}
+        </span>
+        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{entries.length ? `${entries.length} found` : "Not found"}</span>
+      </div>
+      {entries.length ? (
+        <div className="space-y-3">
+          {entries.map((entry) => <Listing entry={entry} exchangeRate={exchangeRate} key={entry.id} />)}
+        </div>
+      ) : (
+        <div className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">No reliable match on this marketplace.</div>
+      )}
+    </div>
+  )
+}
 
+function Listing({ entry, exchangeRate }: { entry: CardEntry; exchangeRate: number }) {
+  const card = entry.tcgCard || entry.ligaCard
+  if (!card) return null
   const imageUrl = "imageUrl" in card ? card.imageUrl : undefined
   const href = "url" in card ? card.url : undefined
-  const subtitle = "groupName" in card ? card.groupName || card.setName : card.set
+  const primaryPrice = entry.platform === "tcg" ? formatCurrency(entry.usdPrice, "USD") : formatCurrency(entry.brlPrice, "BRL")
+  const secondaryPrice = entry.platform === "tcg" ? formatCurrency(convertUsdToBrl(entry.usdPrice, exchangeRate), "BRL") : formatCurrency(entry.usdPrice, "USD")
+  const variant = entry.variantTokens.length ? entry.variantTokens.join(" · ") : "standard"
 
   return (
-    <div className="source-card flex gap-4 rounded-lg p-3 transition-colors">
-      <div className="relative h-[100px] w-[72px] flex-shrink-0 overflow-hidden rounded-xl border border-border/50 bg-secondary/30">
+    <div className="flex gap-3">
+      <div className="relative h-24 w-[68px] flex-shrink-0 overflow-hidden rounded-md border border-border bg-secondary/30">
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={card.name}
-            className="h-full w-full object-contain"
-            onError={(event) => {
-              event.currentTarget.src = "/placeholder.svg"
-            }}
-          />
+          <img src={imageUrl} alt={entry.displayName} className="h-full w-full object-contain" onError={(event) => { event.currentTarget.src = "/placeholder.svg" }} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">No img</div>
+          <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">No image</div>
         )}
       </div>
-
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="mb-2 flex items-center gap-2">
-          <Badge variant="secondary" className="rounded-md border-0 px-2 py-1 text-[10px] font-bold">
-            {platform}
-          </Badge>
-        </div>
-        <div className="line-clamp-2 text-sm font-semibold leading-6 text-foreground">{card.name}</div>
-        {subtitle && <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>}
-        <div className="mt-auto flex items-end justify-between gap-4 pt-3">
+        <div className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">{card.name}</div>
+        <div className="mt-1 text-[11px] text-muted-foreground">{entry.setName || "Set not provided"} · {variant}</div>
+        <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <div>
-            <div className="font-mono text-lg font-bold text-foreground">{primaryPrice ?? "N/A"}</div>
-            {secondaryPrice && <div className="mt-1 text-xs text-muted-foreground">≈ {secondaryPrice}</div>}
+            <div className="font-mono text-base font-bold text-foreground">{primaryPrice}</div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">≈ {secondaryPrice}</div>
           </div>
-          {href && (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="quiet-link inline-flex items-center gap-1.5 border-b border-border px-1 py-1 text-[11px] font-semibold"
-            >
-              Open <ExternalLink className="h-3 w-3" />
-            </a>
-          )}
+          {href && <a href={href} target="_blank" rel="noopener noreferrer" className="quiet-link inline-flex items-center gap-1 border-b border-border px-1 py-1 text-[11px] font-semibold">Open <ExternalLink className="h-3 w-3" /></a>}
         </div>
       </div>
     </div>
@@ -237,11 +169,15 @@ function StatCard({ value, label }: { value: string | number; label: string }) {
   return (
     <div className="p-4 sm:p-5">
       <div className="font-mono text-xl font-bold text-foreground">{value}</div>
-      <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
     </div>
   )
 }
 
 function Empty({ message }: { message: string }) {
-  return <div className="rounded-xl border border-dashed border-border/50 px-4 py-6 text-sm text-muted-foreground">{message}</div>
+  return <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">{message}</div>
+}
+
+function formatCurrency(amount: number, currency: "USD" | "BRL"): string {
+  return new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", { style: "currency", currency }).format(amount)
 }
