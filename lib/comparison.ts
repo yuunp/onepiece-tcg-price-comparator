@@ -41,7 +41,6 @@ export interface ComparisonGroup {
 }
 
 const DEFAULT_EXCHANGE_RATE = 0.19
-const VERSION_WORDS = ["alternate art", "parallel", "pirate foil", "gold", "foil", "reprint", "manga", "special", "promo", "full art"]
 
 export const identifyVariation = (numericCode: string): CardVariation => {
   const variations: Record<string, CardVariation> = {
@@ -72,8 +71,9 @@ export const buildComparisonGroups = (
   const grouped = new Map<string, CardEntry[]>()
 
   for (const entry of entries) {
+    const variantKey = entry.variantTokens.length ? entry.variantTokens.join("+") : "standard"
     const key = entry.baseCode
-      ? `code:${entry.baseCode}`
+      ? `code:${entry.baseCode}::variant:${variantKey}`
       : `name:${entry.normalizedName}::set:${normalizeSetName(entry.setName)}`
     const list = grouped.get(key) || []
     list.push(entry)
@@ -97,7 +97,10 @@ const finalizeGroup = (groupKey: string, entries: CardEntry[]): ComparisonGroup 
   const ligaEntries = entries.filter((entry) => entry.platform === "liga")
   const title = entries[0]?.displayName || "Unknown card"
   const baseCode = entries.find((entry) => entry.baseCode)?.baseCode || ""
-  const subtitle = baseCode || entries[0]?.setName || undefined
+  const variantTokens = Array.from(new Set(entries.flatMap((entry) => entry.variantTokens))).sort()
+  const subtitle = baseCode
+    ? `${baseCode} · ${variantTokens.length ? variantTokens.join(" · ") : "standard"}`
+    : entries[0]?.setName || undefined
   const reasons: string[] = []
 
   if (baseCode) reasons.push(`Grouped by card identity: ${baseCode}`)
@@ -241,5 +244,17 @@ const getDisplayName = (name: string): string => name.replace(/\s*\([^)]*\)\s*/g
 
 const extractVariantTokens = (name: string, code: string): string[] => {
   const lower = `${name} ${code}`.toLowerCase()
-  return VERSION_WORDS.filter((token) => lower.includes(token)).sort()
+  const tokens = new Set<string>()
+
+  if (/\b(alternate art|parallel)\b/.test(lower) || /-(aa|pa)\b/.test(lower)) tokens.add("alternate art")
+  if (/\b(reprint|reprinted)\b/.test(lower) || /-re\b/.test(lower)) tokens.add("reprint")
+  if (/\b(sp|special)\b/.test(lower) || /-sp\b/.test(lower)) tokens.add("special")
+  if (/\b(ch|championship)\b/.test(lower) || /-ch\b/.test(lower)) tokens.add("championship")
+  if (/\bmanga\b/.test(lower) || /-ma\b/.test(lower)) tokens.add("manga")
+  if (/\b(promo|promotional)\b/.test(lower) || /-pr\b/.test(lower)) tokens.add("promo")
+  if (/\b(full art)\b/.test(lower) || /-fa\b/.test(lower)) tokens.add("full art")
+  if (/\b(pirate foil|foil)\b/.test(lower) || /-g(?:old)?\b/.test(lower)) tokens.add("foil")
+  if (/\bgold\b/.test(lower)) tokens.add("gold")
+
+  return Array.from(tokens).sort()
 }

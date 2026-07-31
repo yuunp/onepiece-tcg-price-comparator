@@ -42,7 +42,7 @@ const REQUEST_HEADERS = {
   Accept: "application/json",
 }
 const MAX_RESULTS = 100
-const SEARCHABLE_GROUP_LIMIT = 30
+const SEARCHABLE_GROUP_LIMIT = 100
 const GROUP_PRIORITY_KEYWORDS = ["starter deck", "promo", "premium booster", "extra booster", "release event", "anniversary", "ultra deck"]
 
 function buildSearchTerms(query: string): string[] {
