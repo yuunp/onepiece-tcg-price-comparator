@@ -8,10 +8,7 @@ import {
   Clock,
   ExternalLink,
   Loader2,
-  RefreshCw,
   Search,
-  Sparkles,
-  TrendingDown,
   X,
 } from "lucide-react"
 import { PriceComparison } from "@/components/price-comparison"
@@ -165,40 +162,37 @@ export default function OnePieceComparator() {
   const totalResults = tcgResults.length + ligaResults.length
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
-        <header className="mb-8 rounded-[28px] border border-border/60 bg-card/80 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur xl:p-7">
+    <div className="app-shell min-h-screen">
+      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 sm:px-8 lg:px-10">
+        <header className="app-header -mx-5 mb-10 px-5 py-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <button onClick={clearSearch} className="flex items-center gap-4 text-left">
-                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-primary/20 bg-black/20 shadow-[0_0_24px_rgba(129,140,248,0.2)]">
+              <button onClick={clearSearch} className="flex items-center gap-3 text-left">
+                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border border-border bg-black/20">
                   <img src="/jollylupa.png" alt="BountyDex" className="h-full w-full object-cover" />
                 </div>
-                <div>
-                  <div className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">BountyDex</div>
-                  <div className="mt-1 text-sm text-muted-foreground">Live One Piece card price comparison across TCGPlayer and Liga.</div>
-                </div>
+                <div className="text-lg font-semibold tracking-tight text-foreground">BountyDex</div>
               </button>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
+                <Badge variant="secondary" className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
                   Live rate: 1 USD = R$ {(1 / exchangeRate).toFixed(2)}
                 </Badge>
-                <Badge variant="secondary" className="rounded-full border border-border/60 bg-background/60 px-3 py-1 text-[11px] font-medium text-muted-foreground">
+                <Badge variant="secondary" className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
                   TCGPlayer + Liga
                 </Badge>
               </div>
             </div>
 
             <form onSubmit={handleSearch} className="flex flex-col gap-3 lg:flex-row">
-              <div className="relative flex-1">
+              <div className="search-panel relative flex flex-1 items-center rounded-xl">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search by card name, code, or character"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  className="h-12 rounded-2xl border-border/60 bg-background/70 pl-11 pr-10 text-sm shadow-none"
+                  className="h-12 rounded-xl border-0 bg-transparent pl-11 pr-10 text-sm shadow-none focus-visible:ring-0"
                 />
                 {searchQuery && (
                   <button
@@ -210,7 +204,7 @@ export default function OnePieceComparator() {
                   </button>
                 )}
               </div>
-              <Button type="submit" disabled={isSearching || !searchQuery.trim()} className="h-12 rounded-2xl px-6 font-semibold">
+              <Button type="submit" disabled={isSearching || !searchQuery.trim()} className="h-12 rounded-xl bg-primary px-7 font-semibold text-primary-foreground hover:bg-primary/90">
                 {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
               </Button>
             </form>
@@ -223,7 +217,7 @@ export default function OnePieceComparator() {
                     key={query}
                     type="button"
                     onClick={() => void handleSearch(undefined, query)}
-                    className="rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-primary/30 hover:text-primary"
+                    className="quiet-link border-b border-transparent pb-0.5 text-xs font-medium hover:border-primary/50"
                   >
                     {query}
                   </button>
@@ -234,44 +228,37 @@ export default function OnePieceComparator() {
         </header>
 
         {!hasSearched ? (
-          <section className="grid flex-1 gap-4 lg:grid-cols-[1.35fr_0.9fr]">
-            <div className="rounded-[28px] border border-border/60 bg-card/55 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.18)]">
-              <div className="max-w-xl">
-                <div className="mb-4 inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
-                  One Piece price comparison
-                </div>
-                <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">Find the cheaper listing fast.</h1>
-                <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-                  Search once and compare TCGPlayer market prices against Liga listings in a compact side-by-side view.
-                </p>
-              </div>
+          <section className="home-panel flex flex-1 flex-col justify-between p-7 sm:p-10">
+            <div className="max-w-2xl">
+              <div className="section-kicker mb-5 text-[10px] font-semibold uppercase">Market search / One Piece TCG</div>
+              <h1 className="max-w-xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-foreground sm:text-6xl">Compare the market, not the noise.</h1>
+              <p className="mt-6 max-w-lg text-sm leading-7 text-muted-foreground">Search one card and see the useful difference between TCGPlayer and Liga in one place.</p>
             </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              <FeatureCard icon={<Sparkles className="h-5 w-5" />} title="Better matches" description="Comparison runs on a trimmed result set so broad searches stay fast and cheaper to verify." />
-              <FeatureCard icon={<RefreshCw className="h-5 w-5" />} title="Live conversion" description="TCGPlayer prices are translated into BRL so local comparisons stay practical." />
-              <FeatureCard icon={<TrendingDown className="h-5 w-5" />} title="Cheaper first" description="See likely savings quickly without digging through noisy results." />
+            <div className="mt-16 grid max-w-2xl grid-cols-3 border-t border-border pt-5">
+              <div><div className="text-sm font-semibold text-foreground">01</div><div className="mt-1 text-xs text-muted-foreground">Search a card</div></div>
+              <div><div className="text-sm font-semibold text-foreground">02</div><div className="mt-1 text-xs text-muted-foreground">Compare listings</div></div>
+              <div><div className="text-sm font-semibold text-foreground">03</div><div className="mt-1 text-xs text-muted-foreground">Open the source</div></div>
             </div>
           </section>
         ) : (
           <>
-            <section className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <section className="result-toolbar mb-6 flex flex-col gap-4 pb-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <div className="text-sm text-muted-foreground">Results for</div>
+                <div className="section-kicker text-[10px] font-semibold uppercase">Search results</div>
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground">{searchQuery}</h1>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
+                <Badge variant="secondary" className="rounded-md border border-border bg-transparent px-2.5 py-1 text-xs">
                   {totalResults} comparison results loaded
                 </Badge>
                 {ligaResults.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs text-emerald-300">
+                  <Badge variant="secondary" className="rounded-md border border-border bg-transparent px-2.5 py-1 text-xs text-emerald-300">
                     {ligaResults.length} Liga matches
                   </Badge>
                 )}
                 {!ligaAvailable && (
-                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs text-amber-300">
+                  <Badge variant="secondary" className="rounded-md border border-border bg-transparent px-2.5 py-1 text-xs text-amber-300">
                     {ligaWarning ?? "Liga unavailable"}
                   </Badge>
                 )}
@@ -282,11 +269,11 @@ export default function OnePieceComparator() {
               <SearchLoading />
             ) : (
               <Tabs defaultValue="comparison" className="w-full">
-                <TabsList className="grid h-12 w-full grid-cols-3 rounded-2xl border border-border/60 bg-card/60 p-1">
-                  <TabsTrigger value="comparison" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <TabsList className="grid h-11 w-full grid-cols-3 rounded-lg border border-border bg-card p-1">
+                  <TabsTrigger value="comparison" className="rounded-md text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     Comparison
                   </TabsTrigger>
-                  <TabsTrigger value="tcgplayer" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger value="tcgplayer" className="rounded-md text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     TCGPlayer
                     {tcgResults.length > 0 && (
                       <Badge variant="secondary" className="ml-2 h-5 border-none bg-background/60 px-1.5 py-0 text-[10px]">
@@ -294,7 +281,7 @@ export default function OnePieceComparator() {
                       </Badge>
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="liga" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger value="liga" className="rounded-md text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     Liga
                     {ligaResults.length > 0 && (
                       <Badge variant="secondary" className="ml-2 h-5 border-none bg-background/60 px-1.5 py-0 text-[10px]">
@@ -406,16 +393,6 @@ export default function OnePieceComparator() {
           </>
         )}
       </main>
-    </div>
-  )
-}
-
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="rounded-[24px] border border-border/60 bg-card/50 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.16)]">
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">{icon}</div>
-      <h2 className="text-base font-semibold text-foreground">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
     </div>
   )
 }

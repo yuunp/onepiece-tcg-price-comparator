@@ -41,23 +41,23 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
   }, 0)
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-4">
+    <div className="space-y-10">
+      <div className="stat-strip grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
         <StatCard value={comparedRows.length} label="Compared rows" />
         <StatCard value={tcgOnlyRows.length} label="TCG only" />
         <StatCard value={ligaOnlyRows.length} label="Liga only" />
         <StatCard value={formatCurrency(totalSavings, "USD")} label="Visible price spread" />
       </div>
 
-      <Section title="Direct comparison" description="Rows only appear here when both marketplaces have the same visible card title after cleanup.">
+      <Section title="Direct comparison" description="Same visible title, two sources.">
         {comparedRows.length ? comparedRows.map((row) => <ComparisonRow key={row.id} row={row} exchangeRate={exchangeRate} />) : <Empty message="No direct title matches found yet." />}
       </Section>
 
-      <Section title="Only on TCGPlayer" description="These cards came back from TCGPlayer but not Liga for this search.">
+      <Section title="Only on TCGPlayer" description="Returned by TCGPlayer, not Liga.">
         {tcgOnlyRows.length ? tcgOnlyRows.map((row) => <ComparisonRow key={row.id} row={row} exchangeRate={exchangeRate} />) : <Empty message="No TCG-only cards." />}
       </Section>
 
-      <Section title="Only on Liga" description="These cards came back from Liga but not TCGPlayer for this search.">
+      <Section title="Only on Liga" description="Returned by Liga, not TCGPlayer.">
         {ligaOnlyRows.length ? ligaOnlyRows.map((row) => <ComparisonRow key={row.id} row={row} exchangeRate={exchangeRate} />) : <Empty message="No Liga-only cards." />}
       </Section>
     </div>
@@ -133,9 +133,9 @@ function cleanupTitle(name: string): string {
 function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4">
-      <div>
+      <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        <p className="text-right text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="space-y-3">{children}</div>
     </section>
@@ -148,12 +148,12 @@ function ComparisonRow({ row, exchangeRate }: { row: Row; exchangeRate: number }
   const better = tcgPrice != null && ligaUsd != null ? (tcgPrice < ligaUsd ? "TCGPlayer" : ligaUsd < tcgPrice ? "Liga" : "Tie") : undefined
 
   return (
-    <article className="rounded-[22px] border border-border/60 bg-card/70 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.14)]">
+    <article className="comparison-row rounded-xl p-4 transition-colors">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h3 className="text-base font-semibold text-foreground">{row.title}</h3>
           {better && (
-            <Badge variant="secondary" className="mt-2 rounded-full px-2.5 py-1 text-[11px]">
+            <Badge variant="secondary" className="mt-2 rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px]">
               Better price: {better}
             </Badge>
           )}
@@ -188,7 +188,7 @@ function PlatformCard({
   const subtitle = "groupName" in card ? card.groupName || card.setName : card.set
 
   return (
-    <div className="flex gap-4 rounded-2xl border border-border/50 bg-background/30 p-4">
+    <div className="source-card flex gap-4 rounded-lg p-3 transition-colors">
       <div className="relative h-[100px] w-[72px] flex-shrink-0 overflow-hidden rounded-xl border border-border/50 bg-secondary/30">
         {imageUrl ? (
           <img
@@ -206,7 +206,7 @@ function PlatformCard({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="mb-2 flex items-center gap-2">
-          <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-bold">
+          <Badge variant="secondary" className="rounded-md border-0 px-2 py-1 text-[10px] font-bold">
             {platform}
           </Badge>
         </div>
@@ -222,7 +222,7 @@ function PlatformCard({
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-[11px] font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
+              className="quiet-link inline-flex items-center gap-1.5 border-b border-border px-1 py-1 text-[11px] font-semibold"
             >
               Open <ExternalLink className="h-3 w-3" />
             </a>
@@ -235,8 +235,8 @@ function PlatformCard({
 
 function StatCard({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="rounded-[24px] border border-border/60 bg-card/60 p-5">
-      <div className="font-mono text-2xl font-bold text-foreground">{value}</div>
+    <div className="p-4 sm:p-5">
+      <div className="font-mono text-xl font-bold text-foreground">{value}</div>
       <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
     </div>
   )
