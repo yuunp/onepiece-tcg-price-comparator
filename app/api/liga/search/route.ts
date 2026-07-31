@@ -14,10 +14,10 @@ async function getScraper(): Promise<LigaOnePieceScraper> {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const query = searchParams.get("q")
+  const query = searchParams.get("q") || searchParams.get("query")
 
   if (!query) {
-    return NextResponse.json({ error: "Parâmetro 'q' é obrigatório" }, { status: 400 })
+    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
   }
 
   if (!hasScraperApiKey()) {
@@ -50,13 +50,14 @@ export async function GET(req: Request) {
       globalScraper = null
     }
 
-    return NextResponse.json(
-      {
-        error: "Erro ao buscar no LigaOnePiece",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({
+      query,
+      source: "ligaonepiece",
+      totalFound: 0,
+      results: [],
+      available: false,
+      warning: error instanceof Error ? error.message : "Liga search failed",
+    })
   }
 }
 

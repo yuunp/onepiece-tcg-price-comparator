@@ -102,7 +102,7 @@ export class LigaOnePieceScraper {
       )
     } catch (error) {
       console.error("Liga scraping error:", error)
-      return []
+      throw error
     }
   }
 

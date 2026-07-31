@@ -7,8 +7,6 @@ import {
   ArrowUpDown,
   Clock,
   ExternalLink,
-  LayoutGrid,
-  List,
   Loader2,
   RefreshCw,
   Search,
@@ -27,9 +25,9 @@ import { searchTCGPlayer, type TCGPlayerCard } from "@/lib/tcgplayer"
 
 const DEFAULT_EXCHANGE_RATE = 0.19
 const RECENT_SEARCHES_KEY = "opc_recent"
+const MAX_COMPARISON_RESULTS = 24
 
 type SortDir = "asc" | "desc"
-type ViewMode = "grid" | "list"
 
 type SearchErrors = {
   tcg?: string
@@ -44,7 +42,6 @@ export default function OnePieceComparator() {
   const [hasSearched, setHasSearched] = useState(false)
   const [searchErrors, setSearchErrors] = useState<SearchErrors>({})
   const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_EXCHANGE_RATE)
-  const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [tcgSortKey, setTcgSortKey] = useState<"market" | "low" | "high">("market")
   const [tcgSortDir, setTcgSortDir] = useState<SortDir>("asc")
   const [ligaSortDir, setLigaSortDir] = useState<SortDir>("asc")
@@ -69,7 +66,7 @@ export default function OnePieceComparator() {
     if (!query.trim()) return
 
     setRecentSearches((current) => {
-      const next = [query, ...current.filter((item) => item.toLowerCase() !== query.toLowerCase())].slice(0, 8)
+      const next = [query, ...current.filter((item) => item.toLowerCase() !== query.toLowerCase())].slice(0, 6)
       if (typeof window !== "undefined") {
         localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next))
       }
@@ -99,7 +96,7 @@ export default function OnePieceComparator() {
       const searchPromises = [
         searchTCGPlayer(activeQuery)
           .then((response) => {
-            setTcgResults(response.results)
+            setTcgResults(response.results.slice(0, MAX_COMPARISON_RESULTS))
           })
           .catch((error) => {
             console.error("TCGPlayer search error:", error)
@@ -108,7 +105,7 @@ export default function OnePieceComparator() {
           }),
         searchLigaOnePiece(activeQuery)
           .then((response) => {
-            setLigaResults(response.results)
+            setLigaResults(response.results.slice(0, MAX_COMPARISON_RESULTS))
             setLigaAvailable(response.available)
             setLigaWarning(response.warning)
             if (response.exchangeRate) setExchangeRate(response.exchangeRate)
@@ -169,31 +166,31 @@ export default function OnePieceComparator() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-10 flex flex-col gap-8 lg:mb-12">
-          <div className="flex flex-col gap-4 rounded-3xl border border-border/60 bg-card/60 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.24)] backdrop-blur xl:p-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
+        <header className="mb-8 rounded-[28px] border border-border/60 bg-card/80 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur xl:p-7">
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <button onClick={clearSearch} className="flex items-center gap-4 text-left">
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-primary/20 bg-black/20 shadow-[0_0_24px_rgba(129,140,248,0.2)]">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-primary/20 bg-black/20 shadow-[0_0_24px_rgba(129,140,248,0.2)]">
                   <img src="/jollylupa.png" alt="BountyDex" className="h-full w-full object-cover" />
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">BountyDex</div>
-                  <div className="mt-1 text-sm text-muted-foreground">One Piece card price comparison across TCGPlayer and Liga</div>
+                  <div className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">BountyDex</div>
+                  <div className="mt-1 text-sm text-muted-foreground">Live One Piece card price comparison across TCGPlayer and Liga.</div>
                 </div>
               </button>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">
+                <Badge variant="secondary" className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
                   Live rate: 1 USD = R$ {(1 / exchangeRate).toFixed(2)}
-                </div>
-                <div className="rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  Compare market and local pricing faster
-                </div>
+                </Badge>
+                <Badge variant="secondary" className="rounded-full border border-border/60 bg-background/60 px-3 py-1 text-[11px] font-medium text-muted-foreground">
+                  TCGPlayer + Liga
+                </Badge>
               </div>
             </div>
 
-            <form onSubmit={handleSearch} className="mt-2 flex flex-col gap-3 lg:flex-row">
+            <form onSubmit={handleSearch} className="flex flex-col gap-3 lg:flex-row">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -234,180 +231,179 @@ export default function OnePieceComparator() {
               </div>
             )}
           </div>
-
-          {!hasSearched && (
-            <section className="grid gap-4 md:grid-cols-3">
-              <FeatureCard icon={<Sparkles className="h-5 w-5" />} title="Cleaner price matches" description="Direct side-by-side comparisons with confidence signals for each card pairing." />
-              <FeatureCard icon={<RefreshCw className="h-5 w-5" />} title="Live currency conversion" description="Every TCGPlayer price is translated into BRL so local deal checks stay practical." />
-              <FeatureCard icon={<TrendingDown className="h-5 w-5" />} title="Fast deal scanning" description="Sort by savings, best match quality, or raw price depending on what you want to buy." />
-            </section>
-          )}
         </header>
 
-        {hasSearched && (
-          <section className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="text-sm text-muted-foreground">Results for</div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground">{searchQuery}</h1>
+        {!hasSearched ? (
+          <section className="grid flex-1 gap-4 lg:grid-cols-[1.35fr_0.9fr]">
+            <div className="rounded-[28px] border border-border/60 bg-card/55 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.18)]">
+              <div className="max-w-xl">
+                <div className="mb-4 inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
+                  One Piece price comparison
+                </div>
+                <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">Find the cheaper listing fast.</h1>
+                <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
+                  Search once and compare TCGPlayer market prices against Liga listings in a compact side-by-side view.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <FeatureCard icon={<Sparkles className="h-5 w-5" />} title="Better matches" description="Comparison runs on a trimmed result set so broad searches stay fast and cheaper to verify." />
+              <FeatureCard icon={<RefreshCw className="h-5 w-5" />} title="Live conversion" description="TCGPlayer prices are translated into BRL so local comparisons stay practical." />
+              <FeatureCard icon={<TrendingDown className="h-5 w-5" />} title="Cheaper first" description="See likely savings quickly without digging through noisy results." />
+            </div>
+          </section>
+        ) : (
+          <>
+            <section className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div className="text-sm text-muted-foreground">Results for</div>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground">{searchQuery}</h1>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
-                {totalResults} total results
-              </Badge>
-              {ligaResults.length > 0 && (
-                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs text-emerald-300">
-                  {ligaResults.length} Liga matches
+                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
+                  {totalResults} comparison results loaded
                 </Badge>
-              )}
-              {!ligaAvailable && (
-                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs text-amber-300">
-                  Liga unavailable
-                </Badge>
-              )}
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`flex h-9 w-9 items-center justify-center rounded-xl border transition ${
-                  viewMode === "grid" ? "border-primary bg-primary text-primary-foreground" : "border-border/60 bg-card/50 text-muted-foreground"
-                }`}
-              >
-                <LayoutGrid className="h-4 w-4" />
-                <span className="sr-only">Grid view</span>
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`flex h-9 w-9 items-center justify-center rounded-xl border transition ${
-                  viewMode === "list" ? "border-primary bg-primary text-primary-foreground" : "border-border/60 bg-card/50 text-muted-foreground"
-                }`}
-              >
-                <List className="h-4 w-4" />
-                <span className="sr-only">List view</span>
-              </button>
-            </div>
-          </section>
-        )}
-
-        {!hasSearched ? (
-          <EmptyLanding />
-        ) : isSearching ? (
-          <SearchLoading />
-        ) : (
-          <Tabs defaultValue="comparison" className="w-full">
-            <TabsList className="grid h-14 w-full grid-cols-3 rounded-2xl border border-border/60 bg-card/60 p-1.5">
-              <TabsTrigger value="comparison" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Comparison
-              </TabsTrigger>
-              <TabsTrigger value="tcgplayer" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                TCGPlayer
-                {tcgResults.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 border-none bg-background/60 px-1.5 py-0 text-[10px]">
-                    {tcgResults.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="liga" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Liga
                 {ligaResults.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 border-none bg-background/60 px-1.5 py-0 text-[10px]">
-                    {ligaResults.length}
+                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs text-emerald-300">
+                    {ligaResults.length} Liga matches
                   </Badge>
                 )}
-                {!ligaAvailable && <Badge variant="secondary" className="ml-2 h-5 border-none bg-background/60 px-1.5 py-0 text-[10px] text-amber-300">off</Badge>}
-              </TabsTrigger>
-            </TabsList>
+                {!ligaAvailable && (
+                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs text-amber-300">
+                    {ligaWarning ?? "Liga unavailable"}
+                  </Badge>
+                )}
+              </div>
+            </section>
 
-            <TabsContent value="comparison" className="mt-8">
-              {ligaResults.length > 0 ? (
-                <PriceComparison tcgResults={tcgResults} ligaResults={ligaResults} exchangeRate={exchangeRate || DEFAULT_EXCHANGE_RATE} />
-              ) : (
-                <EmptyState message="No Liga results available for comparison yet" detail={ligaWarning ?? (searchErrors.liga ? "Liga search failed while fetching comparison data." : "Try another search term or open the TCGPlayer tab for raw results.")} />
-              )}
-            </TabsContent>
+            {isSearching ? (
+              <SearchLoading />
+            ) : (
+              <Tabs defaultValue="comparison" className="w-full">
+                <TabsList className="grid h-12 w-full grid-cols-3 rounded-2xl border border-border/60 bg-card/60 p-1">
+                  <TabsTrigger value="comparison" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    Comparison
+                  </TabsTrigger>
+                  <TabsTrigger value="tcgplayer" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    TCGPlayer
+                    {tcgResults.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 h-5 border-none bg-background/60 px-1.5 py-0 text-[10px]">
+                        {tcgResults.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="liga" className="rounded-xl text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    Liga
+                    {ligaResults.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 h-5 border-none bg-background/60 px-1.5 py-0 text-[10px]">
+                        {ligaResults.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="tcgplayer" className="mt-8">
-              {searchErrors.tcg ? (
-                <SearchError message={searchErrors.tcg} />
-              ) : sortedTcg.length > 0 ? (
-                <section>
-                  <div className="mb-6 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">Sort by:</span>
-                    {(["market", "low", "high"] as const).map((key) => (
-                      <button
-                        key={key}
-                        onClick={() => setTcgSortKey(key)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                          tcgSortKey === key
-                            ? "bg-primary text-primary-foreground"
-                            : "border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {key === "market" ? "Market" : key === "low" ? "Low" : "High"}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setTcgSortDir((current) => (current === "asc" ? "desc" : "asc"))}
-                      className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
-                    >
-                      <ArrowUpDown className="h-3 w-3" />
-                      {tcgSortDir === "asc" ? "Low to High" : "High to Low"}
-                    </button>
-                  </div>
-                  <ResultsGrid
-                    viewMode={viewMode}
-                    cards={sortedTcg.map((card, index) => (
-                      <PriceCard
-                        key={card.productId || index}
-                        platform="tcg"
-                        title={card.name}
-                        imageUrl={card.imageUrl}
-                        primaryValue={card.price?.marketPrice != null ? `$${card.price.marketPrice.toFixed(2)}` : "N/A"}
-                        secondaryValue={card.price?.marketPrice ? `R$ ${convertUsdToBrl(card.price.marketPrice, exchangeRate).toFixed(2)}` : undefined}
-                        href={card.url}
-                        actionLabel="View on TCGPlayer"
+                <TabsContent value="comparison" className="mt-6">
+                  {ligaResults.length > 0 ? (
+                    <PriceComparison tcgResults={tcgResults} ligaResults={ligaResults} exchangeRate={exchangeRate || DEFAULT_EXCHANGE_RATE} />
+                  ) : (
+                    <EmptyState
+                      message="Liga results are unavailable right now"
+                      detail={
+                        ligaWarning ??
+                        (searchErrors.liga
+                          ? "Liga search failed while fetching comparison data."
+                          : "Try another search term or use the TCGPlayer tab for raw results.")
+                      }
+                    />
+                  )}
+                </TabsContent>
+
+                <TabsContent value="tcgplayer" className="mt-6">
+                  {searchErrors.tcg ? (
+                    <SearchError message={searchErrors.tcg} />
+                  ) : sortedTcg.length > 0 ? (
+                    <section>
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">Sort by:</span>
+                        {(["market", "low", "high"] as const).map((key) => (
+                          <button
+                            key={key}
+                            onClick={() => setTcgSortKey(key)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                              tcgSortKey === key
+                                ? "bg-primary text-primary-foreground"
+                                : "border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {key === "market" ? "Market" : key === "low" ? "Low" : "High"}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setTcgSortDir((current) => (current === "asc" ? "desc" : "asc"))}
+                          className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+                        >
+                          <ArrowUpDown className="h-3 w-3" />
+                          {tcgSortDir === "asc" ? "Low to High" : "High to Low"}
+                        </button>
+                      </div>
+                      <ResultsGrid
+                        cards={sortedTcg.map((card, index) => (
+                          <PriceCard
+                            key={card.productId || index}
+                            platform="tcg"
+                            title={card.name}
+                            imageUrl={card.imageUrl}
+                            primaryValue={card.price?.marketPrice != null ? `$${card.price.marketPrice.toFixed(2)}` : "N/A"}
+                            secondaryValue={card.price?.marketPrice ? `R$ ${convertUsdToBrl(card.price.marketPrice, exchangeRate).toFixed(2)}` : undefined}
+                            href={card.url}
+                            actionLabel="Open TCGPlayer"
+                          />
+                        ))}
                       />
-                    ))}
-                  />
-                </section>
-              ) : (
-                <EmptyState message="No results found on TCGPlayer" />
-              )}
-            </TabsContent>
+                    </section>
+                  ) : (
+                    <EmptyState message="No results found on TCGPlayer" />
+                  )}
+                </TabsContent>
 
-            <TabsContent value="liga" className="mt-8">
-              {searchErrors.liga ? (
-                <SearchError message={ligaWarning ?? searchErrors.liga} />
-              ) : sortedLiga.length > 0 ? (
-                <section>
-                  <div className="mb-6 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">Sort:</span>
-                    <button
-                      onClick={() => setLigaSortDir((current) => (current === "asc" ? "desc" : "asc"))}
-                      className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
-                    >
-                      <ArrowUpDown className="h-3 w-3" />
-                      {ligaSortDir === "asc" ? "Low to High" : "High to Low"}
-                    </button>
-                  </div>
-                  <ResultsGrid
-                    viewMode={viewMode}
-                    cards={sortedLiga.map((card, index) => (
-                      <PriceCard
-                        key={`${card.numericCode}-${index}`}
-                        platform="liga"
-                        title={card.name}
-                        imageUrl={card.imageUrl}
-                        primaryValue={formatLigaPriceWithUSD(card.price, card.priceUSD)}
-                        href={card.url}
-                        actionLabel="View on Liga"
+                <TabsContent value="liga" className="mt-6">
+                  {searchErrors.liga ? (
+                    <SearchError message={ligaWarning ?? searchErrors.liga} />
+                  ) : sortedLiga.length > 0 ? (
+                    <section>
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">Sort:</span>
+                        <button
+                          onClick={() => setLigaSortDir((current) => (current === "asc" ? "desc" : "asc"))}
+                          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                        >
+                          <ArrowUpDown className="h-3 w-3" />
+                          {ligaSortDir === "asc" ? "Low to High" : "High to Low"}
+                        </button>
+                      </div>
+                      <ResultsGrid
+                        cards={sortedLiga.map((card, index) => (
+                          <PriceCard
+                            key={`${card.numericCode}-${index}`}
+                            platform="liga"
+                            title={card.name}
+                            imageUrl={card.imageUrl}
+                            primaryValue={formatLigaPriceWithUSD(card.price, card.priceUSD)}
+                            href={card.url}
+                            actionLabel="Open Liga"
+                          />
+                        ))}
                       />
-                    ))}
-                  />
-                </section>
-              ) : (
-                <EmptyState message="No results found on Liga One Piece" />
-              )}
-            </TabsContent>
-          </Tabs>
+                    </section>
+                  ) : (
+                    <EmptyState message="No results found on Liga One Piece" detail={ligaWarning} />
+                  )}
+                </TabsContent>
+              </Tabs>
+            )}
+          </>
         )}
       </main>
     </div>
@@ -416,7 +412,7 @@ export default function OnePieceComparator() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/50 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.16)]">
+    <div className="rounded-[24px] border border-border/60 bg-card/50 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.16)]">
       <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">{icon}</div>
       <h2 className="text-base font-semibold text-foreground">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
@@ -424,8 +420,8 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
   )
 }
 
-function ResultsGrid({ cards, viewMode }: { cards: React.ReactNode[]; viewMode: ViewMode }) {
-  return <div className={viewMode === "grid" ? "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" : "flex flex-col gap-3"}>{cards}</div>
+function ResultsGrid({ cards }: { cards: React.ReactNode[] }) {
+  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{cards}</div>
 }
 
 function PriceCard({
@@ -445,11 +441,10 @@ function PriceCard({
   href: string
   actionLabel: string
 }) {
-  const accentClass = platform === "tcg" ? "text-blue-400" : "text-emerald-400"
   const badgeClass = platform === "tcg" ? "platform-tcg" : "platform-liga"
 
   return (
-    <article className="card-hover overflow-hidden rounded-2xl border border-border/60 bg-card/60 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
+    <article className="overflow-hidden rounded-[24px] border border-border/60 bg-card/70 shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition hover:border-primary/30 hover:-translate-y-0.5">
       <div className="aspect-[4/3] bg-secondary/20 p-4">
         {imageUrl ? (
           <img
@@ -468,7 +463,7 @@ function PriceCard({
         <div className="mb-3 flex items-center justify-between gap-2">
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${badgeClass}`}>{platform === "tcg" ? "TCGPlayer" : "Liga"}</span>
         </div>
-        <h3 className={`line-clamp-2 text-sm font-semibold leading-6 text-foreground ${accentClass}`}>{title}</h3>
+        <h3 className="line-clamp-2 text-sm font-semibold leading-6 text-foreground">{title}</h3>
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
             <div className="font-mono text-lg font-bold text-foreground">{primaryValue}</div>
@@ -491,7 +486,7 @@ function PriceCard({
 
 function SearchLoading() {
   return (
-    <div className="flex flex-col items-center justify-center py-32">
+    <div className="flex flex-col items-center justify-center py-24">
       <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-primary/20 bg-primary/10">
         <Loader2 className="h-7 w-7 animate-spin text-primary" />
       </div>
@@ -501,25 +496,16 @@ function SearchLoading() {
   )
 }
 
-function SearchError({ message }: { message: string }) {
-  return (
-    <div className="flex items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 py-8 text-destructive">
-      <AlertCircle className="h-4 w-4" />
-      <p className="text-sm">{message}</p>
-    </div>
-  )
-}
-
 function EmptyLanding() {
   return (
-    <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-border/60 bg-card/20 px-6 py-20 text-center">
-      <div className="max-w-2xl">
+    <div className="flex flex-1 items-center justify-center rounded-[28px] border border-dashed border-border/60 bg-card/20 px-6 py-20 text-center">
+      <div className="max-w-xl">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 text-primary">
           <Search className="h-6 w-6" />
         </div>
         <h2 className="text-2xl font-semibold tracking-tight text-foreground">Search a One Piece card to compare pricing instantly</h2>
         <p className="mt-3 text-sm leading-7 text-muted-foreground">
-          Start with a card name, set code, or character. BountyDex will fetch TCGPlayer and Liga listings so you can check pricing without hopping between tabs.
+          Start with a card name, set code, or character. BountyDex will fetch TCGPlayer and Liga listings so you can compare prices faster.
         </p>
       </div>
     </div>
@@ -528,12 +514,20 @@ function EmptyLanding() {
 
 function EmptyState({ message, detail }: { message: string; detail?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24">
-      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl border border-border/60 bg-card/60">
-        <Search className="h-5 w-5 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center rounded-[28px] border border-border/60 bg-card/35 px-6 py-20 text-center">
+      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+        <AlertCircle className="h-6 w-6" />
       </div>
-      <p className="text-base font-medium text-foreground">{message}</p>
-      <p className="mt-2 text-sm text-muted-foreground">{detail ?? "Try a broader search term or a card code like OP01-025."}</p>
+      <h3 className="text-xl font-semibold text-foreground">{message}</h3>
+      {detail && <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground">{detail}</p>}
+    </div>
+  )
+}
+
+function SearchError({ message }: { message: string }) {
+  return (
+    <div className="rounded-[24px] border border-destructive/30 bg-destructive/10 p-5 text-sm text-destructive">
+      {message}
     </div>
   )
 }
