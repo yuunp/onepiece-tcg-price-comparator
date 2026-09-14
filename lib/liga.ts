@@ -19,6 +19,7 @@ export interface LigaSearchResponse {
   results: LigaCard[]
   totalFound: number
   exchangeRate?: number
+  exchangeRateFallback?: boolean
   available: boolean
   warning?: string
 }
@@ -42,6 +43,7 @@ export async function searchLigaOnePiece(query: string): Promise<LigaSearchRespo
     }))
 
     data.exchangeRate = exchangeRate
+    data.exchangeRateFallback = conversion.fallback
   }
 
   return data

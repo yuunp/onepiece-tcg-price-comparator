@@ -11,6 +11,7 @@ import {
 } from "@/lib/comparison"
 import type { LigaCard } from "@/lib/liga"
 import type { TCGPlayerCard } from "@/lib/tcgplayer"
+import { getSafeSourceUrl } from "@/lib/source-url"
 
 interface PriceComparisonProps {
   tcgResults: TCGPlayerCard[]
@@ -136,7 +137,7 @@ function Listing({ entry, exchangeRate }: { entry: CardEntry; exchangeRate: numb
   const card = entry.tcgCard || entry.ligaCard
   if (!card) return null
   const imageUrl = "imageUrl" in card ? card.imageUrl : undefined
-  const href = "url" in card ? card.url : undefined
+  const href = "url" in card ? getSafeSourceUrl(card.url) : null
   const primaryPrice = entry.platform === "tcg" ? formatCurrency(entry.usdPrice, "USD") : formatCurrency(entry.brlPrice, "BRL")
   const secondaryPrice = entry.platform === "tcg" ? formatCurrency(convertUsdToBrl(entry.usdPrice, exchangeRate), "BRL") : formatCurrency(entry.usdPrice, "USD")
   const variant = entry.variantTokens.length ? entry.variantTokens.join(" · ") : "standard"

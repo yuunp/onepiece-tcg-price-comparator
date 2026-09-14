@@ -2,16 +2,23 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+})
 
 export const metadata: Metadata = {
   title: 'BountyDex - One Piece TCG Price Comparison',
-  description: 'Compare One Piece TCG card prices across TCGPlayer and Liga One Piece to spot the best deals fast.',
+  description: 'Compare One Piece TCG card prices across TCGPlayer and Liga One Piece to spot the best deals fast.'
 }
 
 export const viewport: Viewport = {
-  themeColor: '#f8f5f0',
+  themeColor: '#08090a',
 }
 
 export default function RootLayout({
@@ -24,7 +31,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/jollylupawhitebg.png" />
       </head>
-      <body className={`${inter.className} ${jetbrainsMono.variable} antialiased`}>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         {children}
       </body>
     </html>
