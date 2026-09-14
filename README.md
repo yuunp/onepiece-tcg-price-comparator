@@ -26,5 +26,5 @@
 - **React**: 19
 - **Language**: TypeScript
 - **Styling**: TailwindCSS + ShadCN/UI
-- **Web Scraping**: Playwright
+- **Web Scraping**: ScraperAPI
 - **APIs**: TCGPlayer (via TCGCSV), Exchange Rate API
