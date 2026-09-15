@@ -2,7 +2,6 @@
 
 import React, { useMemo } from "react"
 import { ExternalLink } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import {
   buildComparisonGroups,
   convertUsdToBrl,
@@ -33,13 +32,14 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
 
   return (
     <div className="space-y-10">
-      <div className="stat-strip grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
-        <StatCard value={comparedGroups.length} label="Card identities" />
+      <div className="stat-strip">
+        <StatCard value={comparedGroups.length} label="Matched groups" />
         <StatCard value={comparedEntries} label="Listings grouped" />
-        <StatCard value={tcgOnly + ligaOnly} label="Unmatched" />
-        <StatCard value={formatCurrency(totalSavings, "USD")} label="Price difference" />
+        <StatCard value={tcgOnly + ligaOnly} label="Unmatched groups" />
+        <StatCard value={formatCurrency(totalSavings, "USD")} label="Sum of group spreads (USD)" />
       </div>
 
+      <p className="summary-note">Spread total sums the differences between each matched group’s lowest positive USD prices; not a basket quote or guaranteed savings. Check variants and condition at the source.</p>
       <GroupSection
         title="Matched card identities"
         description="Listings are grouped by card number. Variants stay visible inside the group."
@@ -87,7 +87,6 @@ function GroupSection({
 
 function GroupCard({ group, exchangeRate }: { group: ComparisonGroup; exchangeRate: number }) {
   const identityLabel = group.subtitle || "Identity inferred from name and set"
-  const matchLabel = group.matchType === "comparison" ? "Matched by identity" : "No counterpart"
 
   return (
     <article className="comparison-row rounded-xl p-4 transition-colors sm:p-5">
@@ -100,9 +99,6 @@ function GroupCard({ group, exchangeRate }: { group: ComparisonGroup; exchangeRa
             <span>{group.entries.length} listing{group.entries.length === 1 ? "" : "s"}</span>
           </div>
         </div>
-        <Badge variant="secondary" className="w-fit rounded-md border border-border bg-transparent px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
-          {matchLabel}
-        </Badge>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
@@ -117,17 +113,17 @@ function MarketplaceColumn({ label, entries, exchangeRate }: { label: string; en
   return (
     <div className="source-card rounded-lg p-3">
       <div className="mb-3 flex items-center justify-between">
-        <span className={label === "TCGPlayer" ? "platform-tcg rounded-md px-2 py-1 text-[10px] font-bold" : "platform-liga rounded-md px-2 py-1 text-[10px] font-bold"}>
+        <span className={label === "TCGPlayer" ? "platform-tcg rounded-md px-2 py-1 text-xs font-bold" : "platform-liga rounded-md px-2 py-1 text-xs font-bold"}>
           {label}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{entries.length ? `${entries.length} found` : "Not found"}</span>
+        <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{entries.length ? `${entries.length} found` : "Not found"}</span>
       </div>
       {entries.length ? (
         <div className="space-y-3">
           {entries.map((entry) => <Listing entry={entry} exchangeRate={exchangeRate} key={entry.id} />)}
         </div>
       ) : (
-        <div className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">No reliable match on this marketplace.</div>
+        <div className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">No counterpart in returned results.</div>
       )}
     </div>
   )
@@ -138,28 +134,29 @@ function Listing({ entry, exchangeRate }: { entry: CardEntry; exchangeRate: numb
   if (!card) return null
   const imageUrl = "imageUrl" in card ? card.imageUrl : undefined
   const href = "url" in card ? getSafeSourceUrl(card.url) : null
+  const priceAvailable = entry.platform === "tcg" ? entry.tcgCard?.price?.marketPrice != null : entry.ligaCard?.price != null
   const primaryPrice = entry.platform === "tcg" ? formatCurrency(entry.usdPrice, "USD") : formatCurrency(entry.brlPrice, "BRL")
   const secondaryPrice = entry.platform === "tcg" ? formatCurrency(convertUsdToBrl(entry.usdPrice, exchangeRate), "BRL") : formatCurrency(entry.usdPrice, "USD")
   const variant = entry.variantTokens.length ? entry.variantTokens.join(" · ") : "standard"
 
   return (
-    <div className="flex gap-3">
-      <div className="relative h-24 w-[68px] flex-shrink-0 overflow-hidden rounded-md border border-border bg-secondary/30">
+    <div className="comparison-listing flex gap-3">
+      <div className="relative h-24 w-[68px] flex-shrink-0 overflow-hidden rounded-md border border-border bg-secondary">
         {imageUrl ? (
-          <img src={imageUrl} alt={entry.displayName} className="h-full w-full object-contain" onError={(event) => { event.currentTarget.src = "/placeholder.svg" }} />
+          <img src={imageUrl} alt={entry.displayName} className="h-full w-full object-contain" onError={(event) => { if (!event.currentTarget.src.endsWith("/placeholder.svg")) event.currentTarget.src = "/placeholder.svg" }} />
         ) : (
-          <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">No image</div>
+          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No image</div>
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">{card.name}</div>
-        <div className="mt-1 text-[11px] text-muted-foreground">{entry.setName || "Set not provided"} · {variant}</div>
-        <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+        <div className="text-sm font-semibold leading-5 text-foreground">{card.name}</div>
+        <div className="mt-1 text-sm text-muted-foreground">{entry.setName || "Set not provided"} · {variant}</div>
+        <div className="price-actions">
           <div>
-            <div className="font-mono text-base font-bold text-foreground">{primaryPrice}</div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground">≈ {secondaryPrice}</div>
+            <div className="font-mono text-xl font-semibold tabular-nums text-foreground">{priceAvailable ? primaryPrice : "Price unavailable"}</div>
+            {priceAvailable && <div className="mt-0.5 text-sm text-muted-foreground">≈ {secondaryPrice}</div>}
           </div>
-          {href && <a href={href} target="_blank" rel="noopener noreferrer" className="quiet-link inline-flex items-center gap-1 border-b border-border px-1 py-1 text-[11px] font-semibold">Open <ExternalLink className="h-3 w-3" /></a>}
+          {href && <a aria-label={`Open ${card.name} on ${entry.platform === "tcg" ? "TCGPlayer" : "Liga"}`} href={href} target="_blank" rel="noopener noreferrer" className="quiet-link inline-flex items-center gap-1 border-b border-border px-1 py-1 text-sm font-semibold">Open <ExternalLink className="h-3 w-3" /></a>}
         </div>
       </div>
     </div>
@@ -168,9 +165,9 @@ function Listing({ entry, exchangeRate }: { entry: CardEntry; exchangeRate: numb
 
 function StatCard({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="p-4 sm:p-5">
-      <div className="font-mono text-xl font-bold text-foreground">{value}</div>
-      <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+    <div className="stat-item">
+      <div className="font-mono text-base font-semibold tabular-nums text-foreground">{value}</div>
+      <div className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
     </div>
   )
 }
