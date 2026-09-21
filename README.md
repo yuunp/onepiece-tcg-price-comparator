@@ -6,7 +6,7 @@
 [![React](https://img.shields.io/badge/React-19-blue)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 
-## ⚠️ Important Disclaimer
+##  Important Disclaimer
 
 **This project is for educational and learning purposes only.**
 
