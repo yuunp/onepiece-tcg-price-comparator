@@ -1,132 +1,54 @@
 "use client"
 
 import React, { useMemo } from "react"
-import { ExternalLink } from "lucide-react"
-import {
-  buildComparisonGroups,
-  convertUsdToBrl,
-  type CardEntry,
-  type ComparisonGroup,
-} from "@/lib/comparison"
+import { ExternalLink, GitCompareArrows } from "lucide-react"
+import { buildComparisonGroups, convertUsdToBrl, type CardEntry, type ComparisonGroup } from "@/lib/comparison"
 import type { LigaCard } from "@/lib/liga"
 import type { TCGPlayerCard } from "@/lib/tcgplayer"
 import { getSafeSourceUrl } from "@/lib/source-url"
 
-interface PriceComparisonProps {
-  tcgResults: TCGPlayerCard[]
-  ligaResults: LigaCard[]
-  exchangeRate?: number
-}
+interface PriceComparisonProps { tcgResults: TCGPlayerCard[]; ligaResults: LigaCard[]; exchangeRate?: number }
 
 export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }: PriceComparisonProps) => {
-  const groups = useMemo(
-    () => buildComparisonGroups(tcgResults, ligaResults, exchangeRate),
-    [exchangeRate, ligaResults, tcgResults],
-  )
-  const comparedGroups = groups.filter((group) => group.matchType === "comparison")
-  const unmatchedGroups = groups.filter((group) => group.matchType === "solo")
-  const comparedEntries = comparedGroups.reduce((total, group) => total + group.entries.length, 0)
-  const tcgOnly = unmatchedGroups.filter((group) => group.tcgEntries.length > 0).length
-  const ligaOnly = unmatchedGroups.filter((group) => group.ligaEntries.length > 0).length
-  const totalSavings = comparedGroups.reduce((total, group) => total + (group.savings || 0), 0)
-
+  const groups = useMemo(() => buildComparisonGroups(tcgResults, ligaResults, exchangeRate), [exchangeRate, ligaResults, tcgResults])
+  const compared = groups.filter((g) => g.matchStatus === "exact")
+  const identityReview = groups.filter((g) => g.matchStatus !== "exact")
   return (
-    <div className="space-y-10">
-      <div className="stat-strip">
-        <StatCard value={comparedGroups.length} label="Matched groups" />
-        <StatCard value={comparedEntries} label="Listings grouped" />
-        <StatCard value={tcgOnly + ligaOnly} label="Unmatched groups" />
-        <StatCard value={formatCurrency(totalSavings, "USD")} label="Sum of group spreads (USD)" />
+    <div className="compare-workspace">
+      <aside className="identity-rail" aria-label="Card identity index">
+        <div className="rail-label">Card identity index</div>
+        <div className="identity-count">{compared.length || groups.length}</div>
+        <div className="rail-caption">card {compared.length ? "matches" : "groups"} found</div>
+        <div className="rail-rule" />
+        <div className="rail-key"><span className="dot dot-tcg" /> TCGPlayer</div>
+        <div className="rail-key"><span className="dot dot-liga" /> Liga One Piece</div>
+        <p className="rail-note">Compare like-for-like identity first. Variant and condition stay attached to each listing.</p>
+        <div className="rail-legend"><span>FX</span><small>USD converted using the reported rate. Verify at source.</small></div>
+      </aside>
+      <div className="compare-feed">
+        <div className="workspace-intro">
+          <div><div className="eyebrow">Comparison workspace</div><h2>Source lanes</h2></div>
+          <p>{compared.length ? `${compared.length} identity match${compared.length === 1 ? "" : "es"} with both sources returned.` : "No cross-source identity matches in this response."}</p>
+        </div>
+        {compared.length ? compared.map((group) => <GroupCard key={group.groupKey} group={group} exchangeRate={exchangeRate} />) : <div className="compare-empty"><GitCompareArrows /><strong>Comparison needs two returned sources</strong><span>Inspect the source tabs for the listings that did return. Non-verified groups are kept below for identity review.</span></div>}
+        {identityReview.length > 0 && <section className="unmatched-block" aria-labelledby="identity-review-heading"><div className="eyebrow">Identity review · {identityReview.length}</div><h3 id="identity-review-heading">Listings not verified for comparison</h3><p className="section-copy">These listings stay visible, but prices are not compared until their identity is complete and agrees across sources.</p>{identityReview.map((group) => <GroupCard key={group.groupKey} group={group} exchangeRate={exchangeRate} compact />)}</section>}
       </div>
-
-      <p className="summary-note">Spread total sums the differences between each matched group’s lowest positive USD prices; not a basket quote or guaranteed savings. Check variants and condition at the source.</p>
-      <GroupSection
-        title="Matched card identities"
-        description="Listings are grouped by card number. Variants stay visible inside the group."
-        groups={comparedGroups}
-        exchangeRate={exchangeRate}
-        emptyMessage="No exact card-number matches were found. Unmatched listings remain below."
-      />
-
-      <GroupSection
-        title="Unmatched listings"
-        description="No reliable identity counterpart was found on the other marketplace."
-        groups={unmatchedGroups}
-        exchangeRate={exchangeRate}
-        emptyMessage="Every returned listing has a counterpart."
-      />
     </div>
   )
 }
 
-function GroupSection({
-  title,
-  description,
-  groups,
-  exchangeRate,
-  emptyMessage,
-}: {
-  title: string
-  description: string
-  groups: ComparisonGroup[]
-  exchangeRate: number
-  emptyMessage: string
-}) {
-  return (
-    <section className="space-y-4">
-      <div className="flex flex-col gap-1 border-b border-border pb-3 sm:flex-row sm:items-baseline sm:justify-between">
-        <h2 className="text-base font-semibold text-foreground">{title}</h2>
-        <p className="text-xs text-muted-foreground sm:text-right">{description}</p>
-      </div>
-      <div className="space-y-3">
-        {groups.length ? groups.map((group) => <GroupCard key={group.groupKey} group={group} exchangeRate={exchangeRate} />) : <Empty message={emptyMessage} />}
-      </div>
-    </section>
-  )
+function GroupCard({ group, exchangeRate, compact = false }: { group: ComparisonGroup; exchangeRate: number; compact?: boolean }) {
+  const code = group.subtitle || "Identity details incomplete"
+  const statusLabel = group.matchStatus === "exact" ? "VERIFIED IDENTITY" : group.matchStatus === "ambiguous" ? "NEEDS IDENTITY REVIEW" : "NO VERIFIED COUNTERPART"
+  return <article className={`match-card ${compact ? "match-card-compact" : ""}`}>
+    <header className="match-card-head"><div><div className={`match-status ${group.matchStatus === "exact" ? "is-matched" : "is-unmatched"}`}>{statusLabel}</div><h3>{group.title}</h3><p>{code} <span>·</span> {group.entries.length} listing{group.entries.length === 1 ? "" : "s"}</p></div>{group.matchStatus === "exact" ? <div className="match-spread">{group.bestPrice === "tie" ? "Price tie" : group.bestPrice === "tcg" ? "TCGPlayer lower" : "Liga lower"}</div> : <div className="match-spread">Not compared</div>}</header>
+    <p className="match-evidence">{group.evidence.join(" · ")}</p>
+    <div className="source-lanes"><SourceLane label="TCGPlayer" kind="tcg" entries={group.tcgEntries} exchangeRate={exchangeRate} /><SourceLane label="Liga One Piece" kind="liga" entries={group.ligaEntries} exchangeRate={exchangeRate} /></div>
+  </article>
 }
 
-function GroupCard({ group, exchangeRate }: { group: ComparisonGroup; exchangeRate: number }) {
-  const identityLabel = group.subtitle || "Identity inferred from name and set"
-
-  return (
-    <article className="comparison-row rounded-xl p-4 transition-colors sm:p-5">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h3 className="text-base font-semibold text-foreground">{group.title}</h3>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-mono">{identityLabel}</span>
-            <span aria-hidden="true">·</span>
-            <span>{group.entries.length} listing{group.entries.length === 1 ? "" : "s"}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-2">
-        <MarketplaceColumn label="TCGPlayer" entries={group.tcgEntries} exchangeRate={exchangeRate} />
-        <MarketplaceColumn label="Liga" entries={group.ligaEntries} exchangeRate={exchangeRate} />
-      </div>
-    </article>
-  )
-}
-
-function MarketplaceColumn({ label, entries, exchangeRate }: { label: string; entries: CardEntry[]; exchangeRate: number }) {
-  return (
-    <div className="source-card rounded-lg p-3">
-      <div className="mb-3 flex items-center justify-between">
-        <span className={label === "TCGPlayer" ? "platform-tcg rounded-md px-2 py-1 text-xs font-bold" : "platform-liga rounded-md px-2 py-1 text-xs font-bold"}>
-          {label}
-        </span>
-        <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{entries.length ? `${entries.length} found` : "Not found"}</span>
-      </div>
-      {entries.length ? (
-        <div className="space-y-3">
-          {entries.map((entry) => <Listing entry={entry} exchangeRate={exchangeRate} key={entry.id} />)}
-        </div>
-      ) : (
-        <div className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">No counterpart in returned results.</div>
-      )}
-    </div>
-  )
+function SourceLane({ label, kind, entries, exchangeRate }: { label: string; kind: "tcg" | "liga"; entries: CardEntry[]; exchangeRate: number }) {
+  return <section className={`source-lane lane-${kind}`}><div className="lane-head"><span><i className="dot" />{label}</span><b>{entries.length ? `${entries.length} found` : "Unavailable"}</b></div>{entries.length ? <div className="lane-list">{entries.map((entry) => <Listing key={entry.id} entry={entry} exchangeRate={exchangeRate} />)}</div> : <div className="lane-unavailable"><strong>No returned counterpart</strong><span>This source did not provide a listing for this identity.</span></div>}</section>
 }
 
 function Listing({ entry, exchangeRate }: { entry: CardEntry; exchangeRate: number }) {
@@ -134,48 +56,12 @@ function Listing({ entry, exchangeRate }: { entry: CardEntry; exchangeRate: numb
   if (!card) return null
   const imageUrl = "imageUrl" in card ? card.imageUrl : undefined
   const href = "url" in card ? getSafeSourceUrl(card.url) : null
-  const priceAvailable = entry.platform === "tcg" ? entry.tcgCard?.price?.marketPrice != null : entry.ligaCard?.price != null
-  const primaryPrice = entry.platform === "tcg" ? formatCurrency(entry.usdPrice, "USD") : formatCurrency(entry.brlPrice, "BRL")
-  const secondaryPrice = entry.platform === "tcg" ? formatCurrency(convertUsdToBrl(entry.usdPrice, exchangeRate), "BRL") : formatCurrency(entry.usdPrice, "USD")
-  const variant = entry.variantTokens.length ? entry.variantTokens.join(" · ") : "standard"
-
-  return (
-    <div className="comparison-listing flex gap-3">
-      <div className="relative h-24 w-[68px] flex-shrink-0 overflow-hidden rounded-md border border-border bg-secondary">
-        {imageUrl ? (
-          <img src={imageUrl} alt={entry.displayName} className="h-full w-full object-contain" onError={(event) => { if (!event.currentTarget.src.endsWith("/placeholder.svg")) event.currentTarget.src = "/placeholder.svg" }} />
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No image</div>
-        )}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="text-sm font-semibold leading-5 text-foreground">{card.name}</div>
-        <div className="mt-1 text-sm text-muted-foreground">{entry.setName || "Set not provided"} · {variant}</div>
-        <div className="price-actions">
-          <div>
-            <div className="font-mono text-xl font-semibold tabular-nums text-foreground">{priceAvailable ? primaryPrice : "Price unavailable"}</div>
-            {priceAvailable && <div className="mt-0.5 text-sm text-muted-foreground">≈ {secondaryPrice}</div>}
-          </div>
-          {href && <a aria-label={`Open ${card.name} on ${entry.platform === "tcg" ? "TCGPlayer" : "Liga"}`} href={href} target="_blank" rel="noopener noreferrer" className="quiet-link inline-flex items-center gap-1 border-b border-border px-1 py-1 text-sm font-semibold">Open <ExternalLink className="h-3 w-3" /></a>}
-        </div>
-      </div>
-    </div>
-  )
+  const hasPrice = entry.platform === "tcg" ? entry.tcgCard?.price?.marketPrice != null : entry.ligaCard?.price != null
+  const primary = entry.platform === "tcg" ? formatCurrency(entry.usdPrice, "USD") : formatCurrency(entry.brlPrice, "BRL")
+  const secondary = entry.platform === "tcg" ? `≈ ${formatCurrency(convertUsdToBrl(entry.usdPrice, exchangeRate), "BRL")}` : `≈ ${formatCurrency(entry.usdPrice, "USD")}`
+  const variant = entry.variantTokens.length ? entry.variantTokens.join(" · ") : entry.identity.variant === "base" ? "Base" : "Unknown variant"
+  const condition = entry.platform === "liga" ? entry.ligaCard?.condition?.trim() || "Not provided" : "Not provided"
+  return <div className="listing-row"><div className="listing-thumb">{imageUrl ? <img src={imageUrl} alt={entry.displayName} width={104} height={140} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith("/placeholder.svg")) e.currentTarget.src = "/placeholder.svg" }} /> : <img src="/placeholder.svg" alt="No card image available" width={104} height={140} loading="lazy" />}</div><div className="listing-main"><strong>{card.name}</strong><span>{entry.setName || "Set not provided"}</span><span>{variant} <em>·</em> Condition: {condition}</span></div><div className="listing-price"><strong>{hasPrice ? primary : "Price unavailable"}</strong>{hasPrice && <span>{secondary}</span>}{href ? <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${card.name} on ${entry.platform === "tcg" ? "TCGPlayer" : "Liga One Piece"}`}>Open source <ExternalLink aria-hidden="true" /></a> : <span className="no-source">Source unavailable</span>}</div></div>
 }
 
-function StatCard({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="stat-item">
-      <div className="font-mono text-base font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
-    </div>
-  )
-}
-
-function Empty({ message }: { message: string }) {
-  return <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">{message}</div>
-}
-
-function formatCurrency(amount: number, currency: "USD" | "BRL"): string {
-  return new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", { style: "currency", currency }).format(amount)
-}
+function formatCurrency(amount: number, currency: "USD" | "BRL") { return new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", { style: "currency", currency }).format(amount) }
