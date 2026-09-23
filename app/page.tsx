@@ -207,7 +207,7 @@ export default function OnePieceComparator() {
         </header>
 
         {hasSearched && !isSearching && (
-          <section className="results-heading">
+          <section className="results-heading" aria-live="polite" tabIndex={-1}>
             <h1>Results for “{searchQuery}”</h1>
             <span>{totalResults} listings returned{ligaAvailable === false ? " · Liga limited" : ""}</span>
           </section>
