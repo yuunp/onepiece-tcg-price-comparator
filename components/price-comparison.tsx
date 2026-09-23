@@ -15,8 +15,8 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
   const identityReview = groups.filter((g) => g.matchStatus !== "exact")
   return (
     <div className="compare-workspace">
-      <aside className="identity-rail">
-        <div className="rail-label">IDENTITY INDEX</div>
+      <aside className="identity-rail" aria-label="Card identity index">
+        <div className="rail-label">Card identity index</div>
         <div className="identity-count">{compared.length || groups.length}</div>
         <div className="rail-caption">card {compared.length ? "matches" : "groups"} found</div>
         <div className="rail-rule" />
@@ -27,11 +27,11 @@ export const PriceComparison = ({ tcgResults, ligaResults, exchangeRate = 0.19 }
       </aside>
       <div className="compare-feed">
         <div className="workspace-intro">
-          <div><div className="eyebrow">MATCH WORKSPACE</div><h2>Source lanes</h2></div>
+          <div><div className="eyebrow">Comparison workspace</div><h2>Source lanes</h2></div>
           <p>{compared.length ? `${compared.length} identity match${compared.length === 1 ? "" : "es"} with both sources returned.` : "No cross-source identity matches in this response."}</p>
         </div>
         {compared.length ? compared.map((group) => <GroupCard key={group.groupKey} group={group} exchangeRate={exchangeRate} />) : <div className="compare-empty"><GitCompareArrows /><strong>Comparison needs two returned sources</strong><span>Inspect the source tabs for the listings that did return. Non-verified groups are kept below for identity review.</span></div>}
-        {identityReview.length > 0 && <section className="unmatched-block"><div className="eyebrow">IDENTITY REVIEW · {identityReview.length}</div><h3>Listings not verified for comparison</h3><p className="section-copy">These listings stay visible, but prices are not compared until their identity is complete and agrees across sources.</p>{identityReview.map((group) => <GroupCard key={group.groupKey} group={group} exchangeRate={exchangeRate} compact />)}</section>}
+        {identityReview.length > 0 && <section className="unmatched-block" aria-labelledby="identity-review-heading"><div className="eyebrow">Identity review · {identityReview.length}</div><h3 id="identity-review-heading">Listings not verified for comparison</h3><p className="section-copy">These listings stay visible, but prices are not compared until their identity is complete and agrees across sources.</p>{identityReview.map((group) => <GroupCard key={group.groupKey} group={group} exchangeRate={exchangeRate} compact />)}</section>}
       </div>
     </div>
   )
@@ -61,7 +61,7 @@ function Listing({ entry, exchangeRate }: { entry: CardEntry; exchangeRate: numb
   const secondary = entry.platform === "tcg" ? `≈ ${formatCurrency(convertUsdToBrl(entry.usdPrice, exchangeRate), "BRL")}` : `≈ ${formatCurrency(entry.usdPrice, "USD")}`
   const variant = entry.variantTokens.length ? entry.variantTokens.join(" · ") : entry.identity.variant === "base" ? "Base" : "Unknown variant"
   const condition = entry.platform === "liga" ? entry.ligaCard?.condition?.trim() || "Not provided" : "Not provided"
-  return <div className="listing-row"><div className="listing-thumb">{imageUrl ? <img src={imageUrl} alt={entry.displayName} onError={(e) => { if (!e.currentTarget.src.endsWith("/placeholder.svg")) e.currentTarget.src = "/placeholder.svg" }} /> : <img src="/placeholder.svg" alt="No card image available" />}</div><div className="listing-main"><strong>{card.name}</strong><span>{entry.setName || "Set not provided"}</span><span>{variant} <em>·</em> Condition: {condition}</span></div><div className="listing-price"><strong>{hasPrice ? primary : "Price unavailable"}</strong>{hasPrice && <span>{secondary}</span>}{href ? <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${card.name} on ${entry.platform === "tcg" ? "TCGPlayer" : "Liga One Piece"}`}>Open source <ExternalLink /></a> : <span className="no-source">Source unavailable</span>}</div></div>
+  return <div className="listing-row"><div className="listing-thumb">{imageUrl ? <img src={imageUrl} alt={entry.displayName} width={104} height={140} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith("/placeholder.svg")) e.currentTarget.src = "/placeholder.svg" }} /> : <img src="/placeholder.svg" alt="No card image available" width={104} height={140} loading="lazy" />}</div><div className="listing-main"><strong>{card.name}</strong><span>{entry.setName || "Set not provided"}</span><span>{variant} <em>·</em> Condition: {condition}</span></div><div className="listing-price"><strong>{hasPrice ? primary : "Price unavailable"}</strong>{hasPrice && <span>{secondary}</span>}{href ? <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${card.name} on ${entry.platform === "tcg" ? "TCGPlayer" : "Liga One Piece"}`}>Open source <ExternalLink aria-hidden="true" /></a> : <span className="no-source">Source unavailable</span>}</div></div>
 }
 
 function formatCurrency(amount: number, currency: "USD" | "BRL") { return new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", { style: "currency", currency }).format(amount) }

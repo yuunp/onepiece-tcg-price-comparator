@@ -178,24 +178,20 @@ export default function OnePieceComparator() {
 
   return (
     <div className="page-shell min-h-screen bg-background">
-      <main className="app-frame mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-4 sm:px-6 lg:px-8">
-        <header className="search-header">
+      <a className="skip-link" href="#main-content">Skip to results</a>
+      <main id="main-content" className="app-frame mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-4 sm:px-6 lg:px-8">
+        <header className="search-header" aria-label="BountyDex search desk">
           <button onClick={clearSearch} className="brand" aria-label="BountyDex home">
-            <img src="/jollylupa.png" alt="" className="brand-logo" />
+            <img src="/jollylupa.png" alt="" width={42} height={42} className="brand-logo" />
             <span>BountyDex <small>One Piece TCG</small></span>
           </button>
-          {!hasSearched && <div className="hero-copy">
-            <div className="intro-kicker">A card buyer's field guide</div>
-            <h1 className="intro-title">Find the card. <em>Read the market.</em></h1>
-            <p className="intro-subtitle">BountyDex puts TCGPlayer and Liga One Piece listings side by side, so variants, condition, and source details stay visible before you buy.</p>
-          </div>}
           <form onSubmit={handleSearch} className="search-panel">
             <label htmlFor="card-search" className="search-label">Find a card by name or code</label>
             <p id="search-help" className="search-help">Try a character, set, or card code such as OP01-025.</p>
             <div className="search-controls">
               <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input id="card-search" aria-describedby="search-help" type="text" placeholder="OP01-025 or Monkey D. Luffy" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="search-input" />
+                <Input id="card-search" name="card-search" autoComplete="off" spellCheck={false} aria-describedby="search-help" type="text" placeholder="OP01-025 or Monkey D. Luffy" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="search-input" />
                 {searchQuery && <button type="button" aria-label="Clear search" onClick={clearSearch} className="clear-search"><X className="h-4 w-4" /></button>}
               </div>
               <Button type="submit" disabled={isSearching || !searchQuery.trim()} className="search-submit">
@@ -203,8 +199,8 @@ export default function OnePieceComparator() {
               </Button>
             </div>
           </form>
-          <div className="market-context">
-            <span>TCGPlayer / Liga One Piece</span>
+          <div className="market-context" aria-label="Marketplace and currency context">
+            <span>Sources: TCGPlayer / Liga One Piece</span>
             {hasSearched && <span>{exchangeRateStatus === "live" ? "Live FX" : exchangeRateStatus === "fallback" ? "Fallback FX (estimate)" : "FX unavailable"}: {liveUsdToBrl > 0 ? `1 USD = R$ ${liveUsdToBrl.toFixed(2)}` : "Rate unavailable"}</span>}
           </div>
           {recentSearches.length > 0 && !hasSearched && <div className="recent-searches"><span><Clock3 className="inline h-4 w-4" /> Recent</span>{recentSearches.map((query) => <button key={query} type="button" onClick={() => void handleSearch(undefined, query)}>{query}</button>)}</div>}
@@ -223,11 +219,11 @@ export default function OnePieceComparator() {
           <SearchLoading />
         ) : (
           <Tabs defaultValue="comparison" className="w-full gap-5">
-            <TabsList className="grid h-auto w-full grid-cols-3 rounded-lg border border-white/8 bg-card p-1.5">
-              <TabsTrigger value="comparison" className="min-h-[52px] rounded-lg text-sm font-[590] data-[state=active]:bg-card data-[state=active]:text-foreground ">
+            <TabsList className="workspace-tabs">
+              <TabsTrigger value="comparison" className="workspace-tab">
                 Comparison
               </TabsTrigger>
-              <TabsTrigger value="tcgplayer" className="min-h-[52px] rounded-lg text-sm font-[590] data-[state=active]:bg-card data-[state=active]:text-foreground ">
+              <TabsTrigger value="tcgplayer" className="workspace-tab">
                 TCGPlayer
                 {tcgResults.length > 0 && (
                   <Badge variant="secondary" className="ml-2 h-5 rounded-full border-none bg-card px-1.5 py-0 text-xs text-foreground">
@@ -235,7 +231,7 @@ export default function OnePieceComparator() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="liga" className="min-h-[52px] rounded-lg text-sm font-[590] data-[state=active]:bg-card data-[state=active]:text-foreground ">
+              <TabsTrigger value="liga" className="workspace-tab">
                 Liga
                 {ligaResults.length > 0 && (
                   <Badge variant="secondary" className="ml-2 h-5 rounded-full border-none bg-card px-1.5 py-0 text-xs text-foreground">
@@ -277,13 +273,13 @@ export default function OnePieceComparator() {
                 <section>
                   <div className="mb-5 flex flex-wrap items-center gap-2">
                     <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
-                    <span className="text-sm text-muted-foreground">Sort</span>
+                    <span className="ledger-sort-label">Sort</span>
                     {(["market", "low", "high"] as const).map((key) => (
                       <button
                         key={key}
                         onClick={() => setTcgSortKey(key)}
                         aria-pressed={tcgSortKey === key}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                        className={`ledger-sort-control ${
                           tcgSortKey === key
                             ? "border border-white/10 bg-card text-foreground"
                             : "border border-white/7 bg-card text-muted-foreground hover:text-foreground"
@@ -295,7 +291,7 @@ export default function OnePieceComparator() {
                     <button
                       onClick={() => setTcgSortDir((current) => (current === "asc" ? "desc" : "asc"))}
                       aria-pressed={tcgSortDir === "desc"}
-                      className="flex items-center gap-1.5 rounded-full border border-white/7 bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                      className="ledger-sort-control ledger-sort-direction"
                     >
                       <ArrowUpDown className="h-3 w-3" />
                       {tcgSortDir === "asc" ? "Low to High" : "High to Low"}
@@ -330,11 +326,11 @@ export default function OnePieceComparator() {
                 <section>
                   <div className="mb-5 flex flex-wrap items-center gap-2">
                     <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
-                    <span className="text-sm text-muted-foreground">Sort</span>
+                    <span className="ledger-sort-label">Sort</span>
                     <button
                       onClick={() => setLigaSortDir((current) => (current === "asc" ? "desc" : "asc"))}
                       aria-pressed={ligaSortDir === "desc"}
-                      className="flex items-center gap-1.5 rounded-full border border-white/7 bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                      className="ledger-sort-control ledger-sort-direction"
                     >
                       <ArrowUpDown className="h-3 w-3" />
                       {ligaSortDir === "asc" ? "Low to High" : "High to Low"}
@@ -370,12 +366,12 @@ export default function OnePieceComparator() {
 
 function ViewToggle({ viewMode, setViewMode }: { viewMode: ViewMode; setViewMode: (mode: ViewMode) => void }) {
   return (
-    <div className="flex items-center gap-1 rounded-full border border-white/8 bg-card p-1">
+    <div className="ledger-view-toggle" aria-label="Listing layout">
       <button
         onClick={() => setViewMode("grid")}
         aria-pressed={viewMode === "grid"}
-        className={`flex min-h-11 items-center justify-center gap-2 px-3 rounded-full transition ${
-          viewMode === "grid" ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+        className={`ledger-view-button ${
+          viewMode === "grid" ? "is-selected" : ""
         }`}
       >
         <Grid2x2 className="h-4 w-4" />
@@ -384,8 +380,8 @@ function ViewToggle({ viewMode, setViewMode }: { viewMode: ViewMode; setViewMode
       <button
         onClick={() => setViewMode("list")}
         aria-pressed={viewMode === "list"}
-        className={`flex min-h-11 items-center justify-center gap-2 px-3 rounded-full transition ${
-          viewMode === "list" ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+        className={`ledger-view-button ${
+          viewMode === "list" ? "is-selected" : ""
         }`}
       >
         <LayoutList className="h-4 w-4" />
@@ -428,6 +424,9 @@ function PriceCard({
           <img
             src={imageUrl}
             alt={title}
+            width={240}
+            height={320}
+            loading="lazy"
             className="h-full w-full object-contain"
             onError={(event) => {
               if (!event.currentTarget.src.endsWith("/placeholder.svg")) event.currentTarget.src = "/placeholder.svg"
@@ -490,7 +489,18 @@ function SearchError({ message }: { message: string }) {
 }
 
 function EmptyLanding() {
-  return <p className="landing-note">Compare native USD and BRL prices side by side. Check the variant, condition, and final price at the source before buying.</p>
+  return (
+    <section className="landing-note" aria-label="How BountyDex works">
+      <div className="landing-map-panel">
+        <p>Every card has a trail.</p>
+        <p>Follow the listing evidence before you follow the price.</p>
+      </div>
+      <div className="landing-instructions">
+        <span>Search brief</span>
+        <p>Start with a card code or character. BountyDex keeps returned TCGPlayer and Liga One Piece listings together, then only compares prices after the identity agrees.</p>
+      </div>
+    </section>
+  )
 }
 
 function EmptyState({ message, detail }: { message: string; detail?: string }) {
