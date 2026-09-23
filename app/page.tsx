@@ -177,25 +177,29 @@ export default function OnePieceComparator() {
   const liveUsdToBrl = exchangeRateStatus === "unavailable" || exchangeRate <= 0 ? 0 : 1 / exchangeRate
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+    <div className="page-shell min-h-screen bg-background">
+      <main className="app-frame mx-auto flex min-h-screen w-full max-w-[1280px] flex-col px-4 sm:px-6 lg:px-8">
         <header className="search-header">
           <button onClick={clearSearch} className="brand" aria-label="BountyDex home">
             <img src="/jollylupa.png" alt="" className="brand-logo" />
             <span>BountyDex <small>One Piece TCG</small></span>
           </button>
-          {!hasSearched && <h1 className="intro-title">Compare card prices. Keep the details.</h1>}
-          <form onSubmit={handleSearch}>
-            <label htmlFor="card-search" className="search-label">Find a card</label>
-            <p id="search-help" className="search-help">Search a name, character, or card code, e.g. OP01-025.</p>
+          {!hasSearched && <div className="hero-copy">
+            <div className="intro-kicker">A card buyer's field guide</div>
+            <h1 className="intro-title">Find the card. <em>Read the market.</em></h1>
+            <p className="intro-subtitle">BountyDex puts TCGPlayer and Liga One Piece listings side by side, so variants, condition, and source details stay visible before you buy.</p>
+          </div>}
+          <form onSubmit={handleSearch} className="search-panel">
+            <label htmlFor="card-search" className="search-label">Find a card by name or code</label>
+            <p id="search-help" className="search-help">Try a character, set, or card code such as OP01-025.</p>
             <div className="search-controls">
               <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input id="card-search" aria-describedby="search-help" type="text" placeholder="Name or card code" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="search-input" />
-                {searchQuery && <button type="button" aria-label="Clear search" onClick={() => setSearchQuery("")} className="clear-search"><X className="h-4 w-4" /></button>}
+                <Input id="card-search" aria-describedby="search-help" type="text" placeholder="OP01-025 or Monkey D. Luffy" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="search-input" />
+                {searchQuery && <button type="button" aria-label="Clear search" onClick={clearSearch} className="clear-search"><X className="h-4 w-4" /></button>}
               </div>
               <Button type="submit" disabled={isSearching || !searchQuery.trim()} className="search-submit">
-                {isSearching ? <><Loader2 className="h-4 w-4 animate-spin" /> Searching…</> : "Search"}
+                {isSearching ? <><Loader2 className="h-4 w-4 animate-spin" /> Searching…</> : "Search cards"}
               </Button>
             </div>
           </form>
@@ -249,17 +253,18 @@ export default function OnePieceComparator() {
             <TabsContent value="comparison" className="mt-0 space-y-4">
               {searchErrors.tcg && <SearchError message={searchErrors.tcg} />}
               {searchErrors.liga && <SearchError message={searchErrors.liga} />}
-              {ligaWarning && <p role="status" className="notice">Liga: {ligaWarning}</p>}
+              {ligaWarning && <p role="status" className="notice">Liga One Piece: {ligaWarning}</p>}
+              {ligaAvailable === false && !ligaWarning && <div role="status" className="notice"><strong>Liga One Piece is unavailable for this search.</strong><span className="ml-1">TCGPlayer results remain available in the TCGPlayer tab; comparison will appear when both sources return listings.</span></div>}
               {ligaResults.length > 0 ? (
                 <PriceComparison tcgResults={tcgResults} ligaResults={ligaResults} exchangeRate={exchangeRate || DEFAULT_EXCHANGE_RATE} />
               ) : (
                 <EmptyState
-                  message={searchErrors.liga ? "Comparison unavailable" : "No Liga listings returned"}
+                  message={ligaAvailable === false ? "Comparison paused: Liga has no returned listings" : searchErrors.liga ? "Comparison unavailable" : "No Liga listings returned"}
                   detail={
                     ligaWarning ??
                     (searchErrors.liga
                       ? "Liga search failed while fetching comparison data."
-                      : "Try another search term or open the TCGPlayer tab for raw results.")
+                      : "Use the TCGPlayer tab to inspect returned listings while the second source is unavailable.")
                   }
                 />
               )}
@@ -465,12 +470,12 @@ function PriceCard({
 
 function SearchLoading() {
   return (
-    <div role="status" aria-live="polite" className="flex flex-col items-center justify-center rounded-lg border border-white/8 bg-card px-4 py-12">
-      <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-white/8 bg-card">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+    <div role="status" aria-live="polite" className="empty-panel px-4 py-12">
+      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full border border-primary/30 bg-primary/10">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
-      <p className="mt-6 text-sm font-medium text-foreground">Searching both platforms</p>
-      <p className="mt-1 text-xs text-muted-foreground">Source latency can vary.</p>
+      <p className="text-base font-semibold text-foreground">Checking both marketplaces</p>
+      <p className="mt-2 text-sm text-muted-foreground">Listings, variants, and source links are being gathered.</p>
     </div>
   )
 }
@@ -490,7 +495,7 @@ function EmptyLanding() {
 
 function EmptyState({ message, detail }: { message: string; detail?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-white/8 bg-card px-4 py-12">
+    <div className="empty-panel px-4 py-12">
       <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg border border-white/8 bg-card">
         <Search className="h-5 w-5 text-muted-foreground" />
       </div>
