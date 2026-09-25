@@ -57,7 +57,7 @@ export interface ComparisonGroup {
 
 const DEFAULT_EXCHANGE_RATE = 0.19
 const KNOWN_CODE = /^(OP|ST|EB|PRB)\d{2}-\d{3}(?:-[A-Z0-9]+)*$|^(P|DON)-\d{3}(?:-[A-Z0-9]+)*$/
-const KNOWN_VARIANT_CODES = new Set(["aa", "pa", "re", "fa", "ch", "pr", "sp", "ma", "g"])
+const KNOWN_VARIANT_CODES = new Set(["aa", "pa", "re", "fa", "ch", "pr", "sp", "ma", "g", "gold", "foil"])
 
 export const identifyVariation = (numericCode: string): CardVariation => {
   const variations: Record<string, CardVariation> = {
@@ -69,8 +69,10 @@ export const identifyVariation = (numericCode: string): CardVariation => {
     SP: { code: "SP", name: "Special", description: "Edição especial", rarity: "Special", emoji: "✨" },
     MA: { code: "MA", name: "Manga", description: "Manga rare", rarity: "Secret Rare", emoji: "📖" },
     G: { code: "G", name: "Gold/Foil", description: "Gold or foil treatment", rarity: "Special", emoji: "✨" },
+    GOLD: { code: "GOLD", name: "Gold/Foil", description: "Gold or foil treatment", rarity: "Special", emoji: "✨" },
+    FOIL: { code: "FOIL", name: "Gold/Foil", description: "Gold or foil treatment", rarity: "Special", emoji: "✨" },
   }
-  const suffix = numericCode.split("-").pop()?.replace(/^\d+/, "") || ""
+  const suffix = numericCode.split("-").pop()?.replace(/^\d+/, "").toUpperCase() || ""
   return variations[suffix] || { code: suffix, name: suffix ? "Unknown variant" : "Unknown variant", description: "Variant not safely identified", rarity: "Unknown", emoji: "?" }
 }
 
@@ -83,13 +85,27 @@ export const buildComparisonGroups = (
 ): ComparisonGroup[] => {
   const entries = [...tcgCards.map((card) => toTcgEntry(card, exchangeRate)), ...ligaCards.map((card) => toLigaEntry(card, exchangeRate))]
   const grouped = new Map<string, CardEntry[]>()
+  const incompleteEntries: CardEntry[] = []
 
   for (const entry of entries) {
     // A code is a safe candidate boundary, not proof of a match. Same-code variant
     // disagreements stay together for human review; name-only candidates never cross set boundaries.
     const key = entry.identity.setCode && entry.identity.cardNumber
       ? `code:${entry.identity.setCode}-${entry.identity.cardNumber}`
-      : `incomplete:${entry.identity.setCode || "?"}:${normalizeSetName(entry.setName)}:${entry.normalizedName}`
+      : ""
+    if (key) grouped.set(key, [...(grouped.get(key) || []), entry])
+    else incompleteEntries.push(entry)
+  }
+
+  for (const entry of incompleteEntries) {
+    const candidates = Array.from(grouped.entries()).filter(([key, group]) => key.startsWith("code:") && group.some((candidate) => canReviewTogether(entry, candidate)))
+    if (candidates.length === 1) {
+      const [key, group] = candidates[0]
+      grouped.set(key, [...group, entry])
+      continue
+    }
+
+    const key = `incomplete:${entry.identity.setCode || "?"}:${normalizeSetName(entry.setName)}:${entry.normalizedName}`
     grouped.set(key, [...(grouped.get(key) || []), entry])
   }
 
@@ -99,6 +115,12 @@ export const buildComparisonGroups = (
       const rank = (status: MatchStatus) => status === "exact" ? 0 : status === "ambiguous" ? 1 : 2
       return rank(left.matchStatus) - rank(right.matchStatus) || right.entries.length - left.entries.length || left.title.localeCompare(right.title)
     })
+}
+
+const canReviewTogether = (left: CardEntry, right: CardEntry): boolean => {
+  const leftSet = (left.identity.setCode || normalizeSetName(left.setName)).toLowerCase()
+  const rightSet = (right.identity.setCode || normalizeSetName(right.setName)).toLowerCase()
+  return leftSet !== "" && leftSet === rightSet && left.normalizedName === right.normalizedName
 }
 
 const finalizeGroup = (groupKey: string, entries: CardEntry[]): ComparisonGroup => {
@@ -129,7 +151,7 @@ const finalizeGroup = (groupKey: string, entries: CardEntry[]): ComparisonGroup 
 }
 
 export const identityMatches = (left: CanonicalIdentity, right: CanonicalIdentity): boolean =>
-  isCompleteIdentity(left) && isCompleteIdentity(right) && left.game === right.game && left.setCode === right.setCode && left.cardNumber === right.cardNumber && left.variant === right.variant && sameMarkers(left.markers, right.markers)
+  isCompleteIdentity(left) && isCompleteIdentity(right) && left.game === right.game && left.setCode === right.setCode && left.cardNumber === right.cardNumber && left.variant === right.variant && sameMarkers(left.markers, right.markers) && left.language === right.language && left.printing === right.printing
 
 const isCompleteIdentity = (identity: CanonicalIdentity): boolean => Boolean(identity.setCode && identity.cardNumber && identity.variant && identity.variant !== "unknown")
 const sameMarkers = (left: string[], right: string[]) => left.length === right.length && left.every((value, index) => value === right[index])
@@ -138,12 +160,16 @@ const buildEvidence = (entries: CardEntry[], status: MatchStatus): string[] => {
   const evidence: string[] = []
   const identities = entries.map((entry) => entry.identity)
   const first = identities[0]
-  if (first?.setCode && first.cardNumber) evidence.push(`Exact code ${first.setCode}-${first.cardNumber}`)
+  if (identities.some((identity) => !identity.setCode || !identity.cardNumber)) evidence.push("Card code or number is missing from at least one listing")
+  else if (first?.setCode && first.cardNumber) evidence.push(`Exact code ${first.setCode}-${first.cardNumber}`)
   else evidence.push("Card code or number is missing from at least one listing")
   const variants = Array.from(new Set(entries.map((entry) => entry.identity.variant || "unknown")))
   if (variants.length > 1) evidence.push(`Variants differ: ${variants.join(" / ")}`)
   else if (variants[0] === "unknown") evidence.push("Variant is not reliably identified")
   else evidence.push(`Variant: ${variants[0]}`)
+  const languages = Array.from(new Set(identities.map((identity) => identity.language).filter((language): language is string => Boolean(language))))
+  if (languages.length > 1) evidence.push(`Languages differ: ${languages.join(" / ")}`)
+  else if (languages.length === 1 && identities.some((identity) => !identity.language)) evidence.push("Language is missing from at least one listing")
   if (identities.some((identity) => identity.markers.includes("promo"))) evidence.push("Promo marker retained")
   if (identities.some((identity) => identity.markers.includes("reprint"))) evidence.push("Reprint marker retained")
   if (status === "exact") evidence.push("Both sources agree on the available identity fields")
@@ -202,9 +228,10 @@ const extractCardNumber = (name: string): string | null => {
 const extractMarkers = (name: string, code: string): string[] => {
   const lower = `${name} ${code}`.toLowerCase()
   const markers = new Set<string>()
-  if (/alternate art|\bparallel\b|-(aa|pa)\b/.test(lower)) markers.add("alternate-art")
-  if (/\bpromo(?:tional)?\b|-pr\b|-ch\b/.test(lower)) markers.add("promo")
-  if (/\breprints?\b|-re\b/.test(lower)) markers.add("reprint")
+  if (/alternate[\s_-]+art|\bparallel\b|-(aa|pa)\b/.test(lower)) markers.add("alternate-art")
+  if (/\bpromo(?:tional)?\b|-pr\b/.test(lower)) markers.add("promo")
+  if (/\bchampionship\b|-ch\b/.test(lower)) markers.add("championship")
+  if (/\breprint(?:s|ed)?\b|-re\b/.test(lower)) markers.add("reprint")
   if (/\bmanga\b|-ma\b/.test(lower)) markers.add("manga")
   if (/\bgold\b|\bfoil\b|pirate foil|-g(?:old)?\b/.test(lower)) markers.add("gold/foil")
   if (/\bspecial\b|-sp\b/.test(lower)) markers.add("special")
@@ -214,9 +241,11 @@ const extractMarkers = (name: string, code: string): string[] => {
 
 const extractLanguage = (name: string): string | null => {
   const match = name.match(/\((en|jp|english|japanese)\)/i)
-  return match ? match[1].toLowerCase() : null
+  if (!match) return null
+  const language = match[1].toLowerCase()
+  return language === "english" ? "en" : language === "japanese" ? "jp" : language
 }
 
-const normalizeIdentityName = (name: string): string => getDisplayName(name).toLowerCase().replace(/monkey\.d\./g, "luffy").replace(/monkey d luffy/g, "luffy").replace(/[^a-z0-9&!?']+/g, " ").replace(/\s+/g, " ").trim()
+const normalizeIdentityName = (name: string): string => getDisplayName(name).replace(/\b(?:OP|ST|EB|PRB)\d{2}-\d{3}(?:-[A-Z0-9]+)*\b|\bP-\d{3}(?:-[A-Z0-9]+)*\b|\bDON-[A-Z0-9-]+\b/gi, " ").toLowerCase().replace(/monkey\.d\./g, "luffy").replace(/monkey d luffy/g, "luffy").replace(/[^a-z0-9&!?']+/g, " ").replace(/\s+/g, " ").trim()
 const getDisplayName = (name: string): string => name.replace(/\s*\((?:tcgplayer|liga|source)\)\s*/gi, " ").replace(/\s+/g, " ").trim()
 const normalizeSetName = (setName: string): string => setName.toLowerCase().replace(/starter deck[^a-z0-9]*/g, "st").replace(/premium booster[^a-z0-9]*/g, "prb").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim()

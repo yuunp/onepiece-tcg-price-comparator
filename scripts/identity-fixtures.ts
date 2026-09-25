@@ -20,13 +20,53 @@ const promoVsBase = buildComparisonGroups([tcg("Monkey D. Luffy OP01-025 Promo",
 assert.equal(promoVsBase[0]?.matchStatus, "ambiguous")
 assert.ok(promoVsBase[0]?.evidence.includes("Promo marker retained"))
 
+const hyphenatedAlternateArt = buildComparisonGroups([tcg("Monkey D. Luffy OP01-025 alternate-art", "OP01-025")], [liga("Monkey D. Luffy", "OP01-025")])
+assert.equal(hyphenatedAlternateArt[0]?.matchStatus, "ambiguous")
+
+const reprintedVsBase = buildComparisonGroups([tcg("Monkey D. Luffy OP01-025 reprinted", "OP01-025")], [liga("Monkey D. Luffy", "OP01-025")])
+assert.equal(reprintedVsBase[0]?.matchStatus, "ambiguous")
+assert.ok(reprintedVsBase[0]?.evidence.includes("Reprint marker retained"))
+
+const englishVsJapanese = buildComparisonGroups([tcg("Monkey D. Luffy OP01-025 (EN)", "OP01-025")], [liga("Monkey D. Luffy (JP)", "OP01-025")])
+assert.equal(englishVsJapanese[0]?.matchStatus, "ambiguous")
+assert.ok(englishVsJapanese[0]?.evidence.some((item) => item.includes("Languages differ")))
+
+const knownLanguageVsMissing = buildComparisonGroups([tcg("Monkey D. Luffy OP01-025 (EN)", "OP01-025")], [liga("Monkey D. Luffy", "OP01-025")])
+assert.equal(knownLanguageVsMissing[0]?.matchStatus, "ambiguous")
+assert.ok(knownLanguageVsMissing[0]?.evidence.some((item) => item.includes("Language is missing")))
+
+const englishShort = buildIdentity("OP01-025", "Monkey D. Luffy (EN)", "OP01")
+const englishLong = buildIdentity("OP01-025", "Monkey D. Luffy (English)", "OP01")
+assert.equal(identityMatches(englishShort, englishLong), true)
+
 const reprint = buildIdentity("OP01-025-RE", "Monkey D. Luffy reprint", "OP01")
 assert.equal(reprint.variant, "reprint")
 assert.ok(reprint.markers.includes("reprint"))
 
+const goldCode = buildIdentity("OP01-025-GOLD", "Monkey D. Luffy", "OP01")
+const goldShortCode = buildIdentity("OP01-025-G", "Monkey D. Luffy", "OP01")
+const foilCode = buildIdentity("OP01-025-FOIL", "Monkey D. Luffy", "OP01")
+assert.equal(goldCode.variant, "gold/foil")
+assert.equal(identityMatches(goldCode, goldShortCode), true)
+assert.equal(identityMatches(goldCode, foilCode), true)
+
+const championshipByCode = buildIdentity("OP01-025-CH", "Monkey D. Luffy", "OP01")
+const championshipByName = buildIdentity("OP01-025", "Monkey D. Luffy Championship", "OP01")
+assert.ok(championshipByCode.markers.includes("championship"))
+assert.equal(identityMatches(championshipByCode, championshipByName), true)
+
 const missingCode = buildComparisonGroups([tcg("Monkey D. Luffy", "")], [liga("Monkey D. Luffy", "OP01-025")])
 assert.equal(missingCode[0]?.matchStatus, "ambiguous")
 assert.ok(missingCode[0]?.evidence.some((item) => item.includes("missing")))
+assert.equal(missingCode.length, 1)
+assert.equal(missingCode[0]?.entries.length, 2)
+assert.equal(missingCode[0]?.tcgEntries.length, 1)
+assert.equal(missingCode[0]?.ligaEntries.length, 1)
+
+const sourceCodeOmission = buildComparisonGroups([tcg("Monkey D. Luffy OP01-025", "OP01-025")], [liga("Monkey D. Luffy", "")])
+assert.equal(sourceCodeOmission.length, 1)
+assert.equal(sourceCodeOmission[0]?.matchStatus, "ambiguous")
+assert.equal(sourceCodeOmission[0]?.entries.length, 2)
 
 const similarNames = buildComparisonGroups([tcg("Monkey D. Luffy OP01-025", "OP01-025")], [liga("Monkey D. Luffy OP02-001", "OP02-001")])
 assert.equal(similarNames.length, 2)
